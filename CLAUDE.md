@@ -108,8 +108,8 @@ yarn build         # produção (turbopack)
 
 | Email | Senha | Role | Onde |
 |---|---|---|---|
-| `admin@reserveja.app` | `123456` | ADMIN | `/admin` |
-| `joao@exemplo.com` | `123456` | OWNER | `/painel` |
+| `admin@reserveja.app` | `troca-isso` | ADMIN | `/admin` |
+| `joao@exemplo.com` | `troca-isso` | OWNER | `/painel` |
 
 Estabelecimento: `barbearia-do-joao` em `/barbearia-do-joao`.
 Serviços: Corte (R$50, 30min), Barba (R$40, 30min).

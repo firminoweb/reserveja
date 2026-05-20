@@ -76,8 +76,8 @@ yarn db:seed         # popula com dados de exemplo + constraint anti-overlap
 ```
 
 O seed cria:
-- **admin@reserveja.app** / `123456` — super admin
-- **joao@exemplo.com** / `123456` — dono da Barbearia do João
+- **admin@reserveja.app** / `troca-isso` — super admin
+- **joao@exemplo.com** / `troca-isso` — dono da Barbearia do João
 - Estabelecimento `/barbearia-do-joao` com 2 serviços e 2 profissionais
 
 ### 4. Dev

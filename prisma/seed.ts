@@ -29,11 +29,11 @@ async function ensureNoOverlapConstraint() {
 async function main() {
   await ensureNoOverlapConstraint()
 
-  const passwordHash = await bcrypt.hash("123456", 10)
+  const passwordHash = await bcrypt.hash("troca-isso", 10)
 
   const owner = await db.user.upsert({
     where: { email: "joao@exemplo.com" },
-    update: {},
+    update: { passwordHash },
     create: {
       email: "joao@exemplo.com",
       name: "João Barbeiro",
@@ -44,7 +44,7 @@ async function main() {
 
   await db.user.upsert({
     where: { email: "admin@reserveja.app" },
-    update: {},
+    update: { passwordHash },
     create: {
       email: "admin@reserveja.app",
       name: "Admin Reserve Já",
@@ -160,8 +160,8 @@ async function main() {
   })
 
   console.log("✅ Seed concluído:")
-  console.log(`   admin login: admin@reserveja.app / 123456`)
-  console.log(`   owner login: ${owner.email} / 123456`)
+  console.log(`   admin login: admin@reserveja.app / troca-isso`)
+  console.log(`   owner login: ${owner.email} / troca-isso`)
   console.log(`   estabelecimento: /${establishment.slug}`)
   console.log(`   serviços: ${corte.name}, ${barba.name}`)
   console.log(`   profissionais: ${carlos.name}, ${marcos.name}`)
