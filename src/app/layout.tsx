@@ -1,4 +1,4 @@
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Poppins } from "next/font/google"
 
 import { Toaster } from "@/components/ui/sonner"
@@ -19,9 +19,32 @@ export const metadata: Metadata = {
     default: "Reserve Já — agendamentos sem complicação",
     template: "%s · Reserve Já",
   },
-  description: "Agende horário no seu salão, barbearia ou prestador de serviço em segundos. Sem app, sem cadastro.",
+  description:
+    "Agende horário no seu salão, barbearia ou prestador de serviço em segundos. Sem app, sem cadastro.",
   applicationName: "Reserve Já",
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  ),
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Reserve Já",
+    statusBarStyle: "default",
+  },
+  formatDetection: {
+    telephone: false,
+  },
+}
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#4F46E5" },
+    { media: "(prefers-color-scheme: dark)", color: "#1E1B4B" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
 }
 
 export default function RootLayout({
