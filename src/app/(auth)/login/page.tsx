@@ -1,13 +1,16 @@
 import { Suspense } from "react"
 import Link from "next/link"
 
+import { Logo } from "@/components/ui/logo"
 import { LoginForm } from "./login-form"
 
 export default function LoginPage() {
   return (
-    <main className="min-h-svh flex items-center justify-center px-6">
+    <main className="min-h-svh flex items-center justify-center px-6 py-12">
       <div className="w-full max-w-sm">
-        <Link href="/" className="block text-center text-lg font-bold">Reserve Já</Link>
+        <Link href="/" className="flex justify-center" aria-label="Início">
+          <Logo iconClassName="size-10" textClassName="text-xl" />
+        </Link>
         <h1 className="mt-8 text-2xl font-semibold text-center">Entrar</h1>
 
         <Suspense fallback={<div className="mt-6 h-40" />}>

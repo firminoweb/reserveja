@@ -34,18 +34,22 @@ export default async function AgendarSucesso(
         Seu horário em {booking.establishment.name} está reservado.
       </p>
 
-      <div className="mt-8 rounded-lg border p-5 text-left text-sm space-y-2">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Serviço</span>
-          <span className="font-medium">{booking.service.name}</span>
+      <div className="mt-8 rounded-xl border bg-card p-5 text-left text-sm space-y-3 shadow-sm">
+        <div className="flex justify-between gap-4 items-baseline">
+          <span className="text-muted-foreground shrink-0">Serviço</span>
+          <span className="font-medium text-right min-w-0 break-words">
+            {booking.service.name}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Profissional</span>
-          <span className="font-medium">{booking.professional.name}</span>
+        <div className="flex justify-between gap-4 items-baseline">
+          <span className="text-muted-foreground shrink-0">Profissional</span>
+          <span className="font-medium text-right min-w-0 break-words">
+            {booking.professional.name}
+          </span>
         </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Quando</span>
-          <span className="font-medium text-right">
+        <div className="flex justify-between gap-4 items-baseline">
+          <span className="text-muted-foreground shrink-0">Quando</span>
+          <span className="font-medium text-right min-w-0 break-words">
             {formatLocal(booking.startsAt, tz, "EEEE, dd/MM 'às' HH:mm")}
           </span>
         </div>

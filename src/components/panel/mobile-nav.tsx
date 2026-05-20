@@ -13,6 +13,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/ui/logo"
 import { UnitSelector } from "@/components/panel/unit-selector"
 import { signOutAction } from "@/app/(panel)/painel/_actions"
 
@@ -51,10 +52,10 @@ export function MobileNav({
       </SheetTrigger>
       <SheetContent side="left" className="w-72 p-0 flex flex-col">
         <SheetHeader className="px-4 pt-4 pb-3 border-b">
-          <SheetTitle className="text-lg font-bold text-left">
-            Reserve Já
+          <SheetTitle className="text-left">
+            <Logo iconClassName="size-8" textClassName="text-base" />
           </SheetTitle>
-          <div className="mt-1">
+          <div className="mt-2">
             <UnitSelector
               organizationName={organizationName}
               current={currentUnit}

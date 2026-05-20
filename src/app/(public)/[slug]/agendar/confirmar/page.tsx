@@ -6,6 +6,15 @@ import { Stepper } from "@/components/booking/stepper"
 import { BookingForm } from "@/components/booking/booking-form"
 import { formatLocal } from "@/lib/time"
 
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between gap-4 items-baseline">
+      <span className="text-muted-foreground shrink-0">{label}</span>
+      <span className="font-medium text-right min-w-0 break-words">{value}</span>
+    </div>
+  )
+}
+
 export default async function AgendarStep3(props: PageProps<"/[slug]/agendar/confirmar">) {
   const { slug } = await props.params
   const sp = (await props.searchParams) as {
@@ -74,24 +83,20 @@ export default async function AgendarStep3(props: PageProps<"/[slug]/agendar/con
 
       <h1 className="mt-6 text-2xl font-bold">Confirme seus dados</h1>
 
-      <div className="mt-6 rounded-lg border p-5 space-y-2 text-sm">
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Serviço</span>
-          <span className="font-medium text-right">{service.name}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Profissional</span>
-          <span className="font-medium">{professional.name}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground">Quando</span>
-          <span className="font-medium text-right">
-            {formatLocal(startsAt, establishment.timezone, "EEEE, dd/MM 'às' HH:mm")}
-          </span>
-        </div>
-        <div className="flex justify-between border-t pt-2 mt-3">
-          <span className="text-muted-foreground">Valor</span>
-          <span className="font-semibold">
+      <div className="mt-6 rounded-xl border bg-card p-5 space-y-3 text-sm shadow-sm">
+        <SummaryRow label="Serviço" value={service.name} />
+        <SummaryRow label="Profissional" value={professional.name} />
+        <SummaryRow
+          label="Quando"
+          value={formatLocal(
+            startsAt,
+            establishment.timezone,
+            "EEEE, dd/MM 'às' HH:mm",
+          )}
+        />
+        <div className="flex justify-between gap-4 border-t pt-3 mt-3 items-baseline">
+          <span className="text-muted-foreground shrink-0">Valor</span>
+          <span className="font-bold text-base text-primary">
             R$ {(service.priceCents / 100).toFixed(2).replace(".", ",")}
           </span>
         </div>

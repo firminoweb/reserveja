@@ -2,6 +2,7 @@ import Link from "next/link"
 
 import { requireOwnerMembership } from "@/server/auth/guards"
 import { Button } from "@/components/ui/button"
+import { Logo } from "@/components/ui/logo"
 import { UnitSelector } from "@/components/panel/unit-selector"
 import { MobileNav } from "@/components/panel/mobile-nav"
 import { signOutAction } from "@/app/(panel)/painel/_actions"
@@ -49,8 +50,8 @@ export default async function PanelLayout({
           units={units}
           userEmail={session.user.email ?? ""}
         />
-        <Link href="/painel" className="font-bold text-base">
-          Reserve Já
+        <Link href="/painel" aria-label="Painel — início" className="shrink-0">
+          <Logo iconClassName="size-8" textClassName="text-base" />
         </Link>
         <div className="ml-auto text-xs text-muted-foreground truncate max-w-[40%]">
           {establishment.name}
@@ -60,10 +61,14 @@ export default async function PanelLayout({
       {/* Sidebar desktop (≥md) */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-muted/30">
         <div className="px-3 pt-4 pb-3 border-b">
-          <Link href="/painel" className="px-2 text-lg font-bold block">
-            Reserve Já
+          <Link
+            href="/painel"
+            aria-label="Painel — início"
+            className="px-2 block"
+          >
+            <Logo iconClassName="size-8" textClassName="text-base" />
           </Link>
-          <div className="mt-2">
+          <div className="mt-3">
             <UnitSelector
               organizationName={organization.name}
               current={establishment}
@@ -71,12 +76,12 @@ export default async function PanelLayout({
             />
           </div>
         </div>
-        <nav className="flex-1 px-2 py-3 space-y-1 text-sm">
+        <nav className="flex-1 px-2 py-3 space-y-0.5 text-sm">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="block px-3 py-2 rounded-md hover:bg-muted text-foreground/80 hover:text-foreground"
+              className="block px-3 py-2 rounded-md hover:bg-primary/10 hover:text-primary text-foreground/80 font-medium transition-colors"
             >
               {item.label}
             </Link>

@@ -99,26 +99,34 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
       <h2 className="mt-8 md:mt-10 text-lg font-semibold">Serviços</h2>
       <div className="mt-4 grid gap-3">
         {establishment.services.map((s) => (
-          <Card key={s.id}>
+          <Card key={s.id} className="border bg-card shadow-sm">
             <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-              <div className="min-w-0">
-                <CardTitle className="truncate">{s.name}</CardTitle>
+              <div className="min-w-0 flex-1">
+                <CardTitle className="truncate text-base">{s.name}</CardTitle>
                 {s.description ? (
-                  <CardDescription className="line-clamp-2">
+                  <CardDescription className="line-clamp-2 mt-1">
                     {s.description}
                   </CardDescription>
                 ) : null}
               </div>
               <div className="text-right text-sm shrink-0">
-                <div className="font-medium">
+                <div className="font-bold text-primary text-base">
                   R$ {(s.priceCents / 100).toFixed(2).replace(".", ",")}
                 </div>
-                <div className="text-muted-foreground">{s.durationMin} min</div>
+                <div className="text-xs text-muted-foreground">
+                  {s.durationMin} min
+                </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
-                <Link href={`/${slug}/agendar?serviceId=${s.id}`}>Agendar</Link>
+              <Button
+                asChild
+                size="sm"
+                className="w-full sm:w-auto"
+              >
+                <Link href={`/${slug}/agendar?serviceId=${s.id}`}>
+                  Agendar este serviço
+                </Link>
               </Button>
             </CardContent>
           </Card>

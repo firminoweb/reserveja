@@ -86,7 +86,7 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
 
   return (
     <div className="mt-6 space-y-6">
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2">
+      <div className="-mx-4 sm:-mx-1 flex gap-2 overflow-x-auto px-4 sm:px-1 pb-2 scrollbar-thin snap-x">
         {days.map((d) => {
           const selected = d.iso === selectedDate
           return (
@@ -95,16 +95,21 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
               type="button"
               onClick={() => setSelectedDate(d.iso)}
               className={cn(
-                "shrink-0 w-16 rounded-lg border py-3 text-center text-sm transition-colors",
+                "shrink-0 snap-start w-16 rounded-xl border py-3 text-center text-sm transition-all",
                 selected
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border hover:border-foreground/40",
+                  ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                  : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
               )}
             >
-              <div className="text-[10px] uppercase tracking-wide opacity-70">
+              <div
+                className={cn(
+                  "text-[10px] uppercase tracking-wide font-medium",
+                  selected ? "opacity-90" : "text-muted-foreground",
+                )}
+              >
                 {d.isToday ? "Hoje" : d.isTomorrow ? "Amanhã" : d.weekday}
               </div>
-              <div className="mt-0.5 text-lg font-semibold">{d.day}</div>
+              <div className="mt-0.5 text-lg font-bold">{d.day}</div>
             </button>
           )
         })}
@@ -126,28 +131,38 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
           {professionals.map((pro) => {
             const slots = byProfessional.get(pro.id) ?? []
             return (
-              <div key={pro.id} className="rounded-lg border p-4">
-                <div className="flex items-center gap-3">
+              <div
+                key={pro.id}
+                className="rounded-xl border bg-card p-4 shadow-sm"
+              >
+                <div className="flex items-center gap-3 min-w-0">
                   {pro.photoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={pro.photoUrl} alt="" className="size-9 rounded-full object-cover" />
+                    <img
+                      src={pro.photoUrl}
+                      alt=""
+                      className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
+                    />
                   ) : (
-                    <div className="size-9 rounded-full bg-muted" />
+                    <div className="size-10 shrink-0 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center">
+                      {pro.name.charAt(0).toUpperCase()}
+                    </div>
                   )}
-                  <div className="font-medium">{pro.name}</div>
+                  <div className="font-medium truncate">{pro.name}</div>
                 </div>
                 {slots.length === 0 ? (
                   <p className="mt-3 text-xs text-muted-foreground">
                     Sem horários disponíveis neste dia.
                   </p>
                 ) : (
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-2">
                     {slots.map((s) => (
                       <Button
                         key={s.startsAt}
                         type="button"
                         size="sm"
                         variant="outline"
+                        className="border-primary/30 hover:bg-primary hover:text-primary-foreground hover:border-primary"
                         onClick={() => pickSlot(s)}
                       >
                         {formatLocal(new Date(s.startsAt), timezone, "HH:mm")}

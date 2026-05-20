@@ -122,8 +122,13 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
     @apply bg-background text-foreground;
+    /* Safety net: impede que qualquer filho mal dimensionado crie scroll lateral
+       no documento. Containers internos que precisam scroll horizontal (slot picker,
+       agenda semanal) continuam funcionando porque controlam o próprio overflow. */
+    overflow-x: clip;
   }
   html {
     @apply font-sans;
