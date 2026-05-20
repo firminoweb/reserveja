@@ -1,3 +1,4 @@
+import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
 import { formatLocal } from "@/lib/time"
 import { sendText } from "@/lib/whatsapp"
@@ -20,7 +21,16 @@ export async function sendBookingConfirmation(bookingId: string): Promise<void> 
         service: { select: { name: true } },
         professional: { select: { name: true } },
         establishment: {
-          select: { slug: true, name: true, timezone: true },
+          select: {
+            slug: true,
+            name: true,
+            timezone: true,
+            street: true,
+            streetNumber: true,
+            neighborhood: true,
+            city: true,
+            state: true,
+          },
         },
       },
     })
@@ -33,16 +43,20 @@ export async function sendBookingConfirmation(bookingId: string): Promise<void> 
     const dateLine = formatLocal(booking.startsAt, tz, "EEEE, dd/MM 'às' HH:mm")
     const link = `${appUrl()}/${booking.establishment.slug}/b/${booking.publicToken}`
     const firstName = booking.clientName.split(" ")[0]
+    const addressLine = formatAddressOneLine(booking.establishment)
 
     const message = [
       `Olá ${firstName}! Seu horário em ${booking.establishment.name} está confirmado.`,
       ``,
       `📅 ${dateLine}`,
       `✂️ ${booking.service.name} com ${booking.professional.name}`,
+      addressLine ? `📍 ${addressLine}` : "",
       ``,
       `Pra cancelar ou ver o agendamento:`,
       link,
-    ].join("\n")
+    ]
+      .filter(Boolean)
+      .join("\n")
 
     const result = await sendText({ phone: booking.clientPhone, message })
     if (!result.ok) {
@@ -65,7 +79,16 @@ export async function sendBookingReminder(bookingId: string): Promise<boolean> {
         service: { select: { name: true } },
         professional: { select: { name: true } },
         establishment: {
-          select: { slug: true, name: true, timezone: true },
+          select: {
+            slug: true,
+            name: true,
+            timezone: true,
+            street: true,
+            streetNumber: true,
+            neighborhood: true,
+            city: true,
+            state: true,
+          },
         },
       },
     })
@@ -78,15 +101,19 @@ export async function sendBookingReminder(bookingId: string): Promise<boolean> {
     const timeLine = formatLocal(booking.startsAt, tz, "HH:mm")
     const link = `${appUrl()}/${booking.establishment.slug}/b/${booking.publicToken}`
     const firstName = booking.clientName.split(" ")[0]
+    const addressLine = formatAddressOneLine(booking.establishment)
 
     const message = [
       `Oi ${firstName}! Lembrete: você tem horário daqui a pouco em ${booking.establishment.name}.`,
       ``,
       `📅 hoje às ${timeLine}`,
       `✂️ ${booking.service.name} com ${booking.professional.name}`,
+      addressLine ? `📍 ${addressLine}` : "",
       ``,
       `Precisa cancelar? ${link}`,
-    ].join("\n")
+    ]
+      .filter(Boolean)
+      .join("\n")
 
     const result = await sendText({ phone: booking.clientPhone, message })
     return result.ok

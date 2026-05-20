@@ -25,7 +25,7 @@ export default async function AgendarSucesso(
   const waNumber = booking.establishment.whatsapp.replace(/\D/g, "")
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-12 text-center">
+    <main className="mx-auto max-w-xl px-4 md:px-6 py-8 md:py-12 text-center">
       <div className="mx-auto flex size-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-2xl">
         ✓
       </div>

@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { PasswordStrength } from "@/components/ui/password-strength"
+import { AddressFields } from "@/components/ui/address-fields"
 import { signUpSchema, type SignUpInput } from "@/lib/validations/auth"
 import { slugify } from "@/lib/slug"
 import { registerAction } from "./actions"
@@ -42,6 +43,13 @@ export function RegisterForm() {
       whatsapp: "",
       category: "BARBEARIA",
       taxId: "",
+      cep: "",
+      street: "",
+      streetNumber: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
     },
   })
 
@@ -267,6 +275,11 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
+
+        <div className="pt-4 border-t">
+          <h2 className="text-sm font-semibold mb-3">Endereço do estabelecimento</h2>
+          <AddressFields />
+        </div>
 
         <Button
           type="submit"

@@ -1,6 +1,7 @@
 import { z } from "@/lib/zod"
 
 import { isValidBR } from "@/lib/phone"
+import { isValidCep } from "@/lib/viacep"
 
 export const slugSchema = z
   .string()
@@ -25,6 +26,9 @@ const optionalUrl = z
   .optional()
   .or(z.literal(""))
 
+const optionalString = (max: number) =>
+  z.string().trim().max(max).optional().or(z.literal(""))
+
 export const updateEstablishmentSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto").max(120, "Nome muito longo"),
   description: z.string().trim().max(500).optional().or(z.literal("")),
@@ -34,6 +38,25 @@ export const updateEstablishmentSchema = z.object({
   timezone: z.string().min(3).max(60),
   logoUrl: optionalUrl,
   coverUrl: optionalUrl,
+  // Endereço opcional em update (estabelecimentos pré-migration podem não ter)
+  cep: z
+    .string()
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || isValidCep(v), "CEP inválido"),
+  street: optionalString(120),
+  streetNumber: optionalString(20),
+  complement: optionalString(80),
+  neighborhood: optionalString(80),
+  city: optionalString(80),
+  state: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(2)
+    .optional()
+    .or(z.literal(""))
+    .refine((v) => !v || /^[A-Z]{2}$/.test(v), "UF deve ter 2 letras"),
 })
 
 export const workingHourSchema = z.object({

@@ -24,7 +24,7 @@ export default async function AgendarStep1(props: PageProps<"/[slug]/agendar">) 
   if (!establishment || establishment.organization.status === "SUSPENDED") notFound()
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-8">
+    <main className="mx-auto max-w-2xl px-4 md:px-6 py-6 md:py-8">
       <Link href={`/${slug}`} className="text-xs text-muted-foreground hover:text-foreground">
         ← Voltar para {establishment.name}
       </Link>

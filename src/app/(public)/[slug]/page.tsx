@@ -1,7 +1,9 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { MapPin } from "lucide-react"
 
 import { db } from "@/lib/db"
+import { formatAddressLines, googleMapsUrl, hasAddress } from "@/lib/address"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
@@ -17,6 +19,13 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
       coverUrl: true,
       logoUrl: true,
       whatsapp: true,
+      street: true,
+      streetNumber: true,
+      complement: true,
+      neighborhood: true,
+      city: true,
+      state: true,
+      cep: true,
       organization: { select: { status: true } },
       services: {
         where: { active: true },
@@ -31,44 +40,84 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="flex items-center gap-4">
+    <main className="mx-auto max-w-3xl px-4 md:px-6 py-6 md:py-10">
+      <div className="flex items-center gap-3 md:gap-4">
         {establishment.logoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={establishment.logoUrl} alt="" className="size-16 rounded-full object-cover" />
+          <img
+            src={establishment.logoUrl}
+            alt=""
+            className="size-14 md:size-16 rounded-full object-cover"
+          />
         ) : (
-          <div className="size-16 rounded-full bg-muted" />
+          <div className="size-14 md:size-16 rounded-full bg-muted" />
         )}
-        <div>
-          <h1 className="text-2xl font-bold">{establishment.name}</h1>
+        <div className="min-w-0">
+          <h1 className="text-xl md:text-2xl font-bold truncate">
+            {establishment.name}
+          </h1>
           {establishment.description ? (
-            <p className="text-sm text-muted-foreground mt-1">{establishment.description}</p>
+            <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+              {establishment.description}
+            </p>
           ) : null}
         </div>
       </div>
 
-      <div className="mt-8 flex justify-end">
-        <Button asChild size="lg">
+      {hasAddress(establishment) ? (
+        <div className="mt-6 rounded-lg border bg-muted/30 px-4 py-3 flex items-start gap-3">
+          <MapPin className="size-5 text-muted-foreground shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1 text-sm">
+            {formatAddressLines(establishment).map((line, i) => (
+              <div
+                key={i}
+                className={i === 0 ? "font-medium" : "text-muted-foreground"}
+              >
+                {line}
+              </div>
+            ))}
+            {googleMapsUrl(establishment) ? (
+              <a
+                href={googleMapsUrl(establishment)!}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-1 inline-block text-xs underline text-primary"
+              >
+                Abrir no Google Maps
+              </a>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      <div className="mt-6 md:mt-8 flex sm:justify-end">
+        <Button asChild size="lg" className="w-full sm:w-auto">
           <Link href={`/${slug}/agendar`}>Agendar horário</Link>
         </Button>
       </div>
 
-      <h2 className="mt-10 text-lg font-semibold">Serviços</h2>
+      <h2 className="mt-8 md:mt-10 text-lg font-semibold">Serviços</h2>
       <div className="mt-4 grid gap-3">
         {establishment.services.map((s) => (
           <Card key={s.id}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0">
-              <div>
-                <CardTitle>{s.name}</CardTitle>
-                {s.description ? <CardDescription>{s.description}</CardDescription> : null}
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+              <div className="min-w-0">
+                <CardTitle className="truncate">{s.name}</CardTitle>
+                {s.description ? (
+                  <CardDescription className="line-clamp-2">
+                    {s.description}
+                  </CardDescription>
+                ) : null}
               </div>
-              <div className="text-right text-sm">
-                <div className="font-medium">R$ {(s.priceCents / 100).toFixed(2).replace(".", ",")}</div>
+              <div className="text-right text-sm shrink-0">
+                <div className="font-medium">
+                  R$ {(s.priceCents / 100).toFixed(2).replace(".", ",")}
+                </div>
                 <div className="text-muted-foreground">{s.durationMin} min</div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <Button asChild size="sm" variant="outline">
+              <Button asChild size="sm" variant="outline" className="w-full sm:w-auto">
                 <Link href={`/${slug}/agendar?serviceId=${s.id}`}>Agendar</Link>
               </Button>
             </CardContent>

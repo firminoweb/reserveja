@@ -73,6 +73,12 @@ async function main() {
             description: "Corte e barba na Vila Madalena. Atendemos com hora marcada.",
             whatsapp: "+5511999999999",
             timezone: "America/Sao_Paulo",
+            cep: "05433010",
+            street: "Rua Harmonia",
+            streetNumber: "300",
+            neighborhood: "Vila Madalena",
+            city: "São Paulo",
+            state: "SP",
             workingHours: {
               create: [1, 2, 3, 4, 5, 6].map((weekday) => ({
                 weekday,
@@ -105,6 +111,22 @@ async function main() {
         role: "OWNER",
       },
     })
+
+    // Backfill de endereço se faltou (estabelecimento criado pré-migration).
+    // Só preenche se o cep estiver null pra não sobrescrever ajustes do owner.
+    if (!establishment.cep) {
+      await db.establishment.update({
+        where: { id: establishment.id },
+        data: {
+          cep: "05433010",
+          street: "Rua Harmonia",
+          streetNumber: "300",
+          neighborhood: "Vila Madalena",
+          city: "São Paulo",
+          state: "SP",
+        },
+      })
+    }
   }
 
   const corte = await db.service.upsert({

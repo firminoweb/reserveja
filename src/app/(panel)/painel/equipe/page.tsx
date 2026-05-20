@@ -31,7 +31,7 @@ export default async function PanelEquipePage() {
   }))
 
   return (
-    <div className="px-8 py-8 max-w-2xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-2xl">
       <TeamPanel
         members={members}
         units={allUnits}

@@ -138,6 +138,14 @@ model Establishment {
   timezone       String         @default("America/Sao_Paulo")
   logoUrl        String?
   coverUrl       String?
+  // Endereço (nullable pra compat com estabelecimentos pré-migration)
+  cep            String?        // 8 dígitos sem máscara
+  street         String?
+  streetNumber   String?
+  complement     String?
+  neighborhood   String?
+  city           String?
+  state          String?        // UF, 2 chars
   workingHours   WorkingHour[]
   services       Service[]
   professionals  Professional[]

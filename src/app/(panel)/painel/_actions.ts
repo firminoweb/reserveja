@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache"
 import type { BookingStatus } from "@prisma/client"
 
+import { signOut } from "@/lib/auth"
 import { requireOwnerMembership } from "@/server/auth/guards"
 import {
   BookingStatusError,
@@ -12,6 +13,10 @@ import {
   RescheduleError,
   rescheduleBooking,
 } from "@/server/booking/reschedule"
+
+export async function signOutAction() {
+  await signOut({ redirectTo: "/" })
+}
 
 export async function setBookingStatusAction(
   bookingId: string,

@@ -1,10 +1,13 @@
 import bcrypt from "bcryptjs"
 
+import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
+import { sendEmail } from "@/lib/email"
 import { isPasswordLeaked } from "@/lib/hibp"
 import { toE164BR } from "@/lib/phone"
 import { slugify } from "@/lib/slug"
 import { taxIdDigits } from "@/lib/tax"
+import { cepDigits } from "@/lib/viacep"
 import type { SignUpInput } from "@/lib/validations/auth"
 
 export class RegisterError extends Error {
@@ -59,8 +62,23 @@ export async function registerOwner(input: SignUpInput) {
   const whatsappE164 = toE164BR(input.whatsapp)!
   const taxId = input.taxId ? taxIdDigits(input.taxId) : null
 
+  let result: {
+    user: { id: string; email: string; name: string }
+    organization: { id: string; name: string }
+    establishment: {
+      id: string
+      slug: string
+      name: string
+      street: string | null
+      streetNumber: string | null
+      neighborhood: string | null
+      city: string | null
+      state: string | null
+    }
+  }
+
   try {
-    return await db.$transaction(async (tx) => {
+    result = await db.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
           email: input.email,
@@ -82,6 +100,13 @@ export async function registerOwner(input: SignUpInput) {
               slug,
               name: input.establishmentName,
               whatsapp: whatsappE164,
+              cep: cepDigits(input.cep),
+              street: input.street,
+              streetNumber: input.streetNumber,
+              complement: input.complement?.trim() || null,
+              neighborhood: input.neighborhood,
+              city: input.city,
+              state: input.state,
               workingHours: { createMany: { data: DEFAULT_WORKING_HOURS } },
             },
           },
@@ -104,4 +129,79 @@ export async function registerOwner(input: SignUpInput) {
     }
     throw err
   }
+
+  // Email de boas-vindas fire-and-forget. Resend não configurado → loga e
+  // ignora (não bloqueia o cadastro).
+  void sendWelcomeEmail(result.user, result.establishment)
+
+  return result
 }
+
+async function sendWelcomeEmail(
+  user: { email: string; name: string },
+  establishment: {
+    slug: string
+    name: string
+    street: string | null
+    streetNumber: string | null
+    neighborhood: string | null
+    city: string | null
+    state: string | null
+  },
+) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  const publicUrl = `${appUrl}/${establishment.slug}`
+  const panelUrl = `${appUrl}/painel`
+  const safeName = user.name.replace(/</g, "&lt;")
+  const safeEstName = establishment.name.replace(/</g, "&lt;")
+
+  const addressLine = formatAddressOneLine(establishment)
+  const safeAddressLine = addressLine.replace(/</g, "&lt;")
+
+  await sendEmail({
+    to: user.email,
+    subject: `Bem-vindo ao Reserve Já — ${establishment.name} no ar`,
+    text: [
+      `Olá ${user.name},`,
+      ``,
+      `${establishment.name} já está no ar no Reserve Já.`,
+      addressLine ? `Endereço cadastrado: ${addressLine}` : "",
+      ``,
+      `Link público pros seus clientes agendarem:`,
+      publicUrl,
+      ``,
+      `Painel de gestão:`,
+      panelUrl,
+      ``,
+      `Próximos passos:`,
+      `  1. Cadastrar serviços (${appUrl}/painel/servicos)`,
+      `  2. Cadastrar profissionais (${appUrl}/painel/profissionais)`,
+      `  3. Ajustar horários (${appUrl}/painel/horarios)`,
+      ``,
+      `Esqueceu a senha? ${appUrl}/recuperar-senha`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+    html: `
+      <p>Olá ${safeName},</p>
+      <p><strong>${safeEstName}</strong> já está no ar no Reserve Já.</p>
+      ${addressLine ? `<p style="color:#6b7280;font-size:13px;">${safeAddressLine}</p>` : ""}
+      <p>Compartilhe esse link com seus clientes pra começarem a agendar:<br>
+        <a href="${publicUrl}">${publicUrl}</a>
+      </p>
+      <p>Acesse o painel pra gerenciar:<br>
+        <a href="${panelUrl}">${panelUrl}</a>
+      </p>
+      <h3>Próximos passos</h3>
+      <ol>
+        <li><a href="${appUrl}/painel/servicos">Cadastrar serviços</a></li>
+        <li><a href="${appUrl}/painel/profissionais">Cadastrar profissionais</a></li>
+        <li><a href="${appUrl}/painel/horarios">Ajustar horários de atendimento</a></li>
+      </ol>
+      <p style="color: #6b7280; font-size: 13px; margin-top: 24px;">
+        Esqueceu a senha? Recupere em <a href="${appUrl}/recuperar-senha">${appUrl}/recuperar-senha</a>.
+      </p>
+    `,
+  })
+}
+

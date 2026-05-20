@@ -9,7 +9,7 @@ export default async function PanelConfigPage() {
   const { organization, establishment } = await requireOwnerRole()
 
   return (
-    <div className="px-8 py-8 max-w-2xl">
+    <div className="px-4 py-6 md:px-8 md:py-8 max-w-2xl">
       <h1 className="text-2xl font-bold">Configurações</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         Endereço público:{" "}
@@ -51,6 +51,13 @@ export default async function PanelConfigPage() {
             timezone: establishment.timezone,
             logoUrl: establishment.logoUrl,
             coverUrl: establishment.coverUrl,
+            cep: establishment.cep,
+            street: establishment.street,
+            streetNumber: establishment.streetNumber,
+            complement: establishment.complement,
+            neighborhood: establishment.neighborhood,
+            city: establishment.city,
+            state: establishment.state,
           }}
         />
       </section>

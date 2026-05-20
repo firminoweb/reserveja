@@ -30,7 +30,7 @@ export default async function PanelProfessionalsPage() {
   }))
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 md:px-8 md:py-8">
       <ProfessionalsList professionals={items} serviceOptions={services} />
     </div>
   )

@@ -18,6 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { AddressFields } from "@/components/ui/address-fields"
+import { maskCep } from "@/lib/viacep"
 import {
   updateEstablishmentSchema,
   type UpdateEstablishmentInput,
@@ -46,6 +48,13 @@ type Props = {
     timezone: string
     logoUrl: string | null
     coverUrl: string | null
+    cep: string | null
+    street: string | null
+    streetNumber: string | null
+    complement: string | null
+    neighborhood: string | null
+    city: string | null
+    state: string | null
   }
 }
 
@@ -64,6 +73,13 @@ export function SettingsForm({ initial }: Props) {
       timezone: initial.timezone,
       logoUrl: initial.logoUrl ?? "",
       coverUrl: initial.coverUrl ?? "",
+      cep: initial.cep ? maskCep(initial.cep) : "",
+      street: initial.street ?? "",
+      streetNumber: initial.streetNumber ?? "",
+      complement: initial.complement ?? "",
+      neighborhood: initial.neighborhood ?? "",
+      city: initial.city ?? "",
+      state: initial.state ?? "",
     },
   })
 
@@ -202,6 +218,15 @@ export function SettingsForm({ initial }: Props) {
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="pt-2 border-t">
+          <h3 className="text-sm font-semibold mb-1">Endereço</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Aparece na vitrine pública com link pro Google Maps. Preencha tudo
+            ou deixe em branco — campos parciais não são exibidos.
+          </p>
+          <AddressFields />
         </div>
 
         <Button type="submit" disabled={form.formState.isSubmitting}>

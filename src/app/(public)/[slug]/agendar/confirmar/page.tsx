@@ -60,7 +60,7 @@ export default async function AgendarStep3(props: PageProps<"/[slug]/agendar/con
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-6 py-8">
+    <main className="mx-auto max-w-2xl px-4 md:px-6 py-6 md:py-8">
       <Link
         href={`/${slug}/agendar/profissional?serviceId=${service.id}`}
         className="text-xs text-muted-foreground hover:text-foreground"

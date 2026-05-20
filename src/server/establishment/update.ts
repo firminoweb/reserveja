@@ -1,5 +1,6 @@
 import { db } from "@/lib/db"
 import { toE164BR } from "@/lib/phone"
+import { cepDigits } from "@/lib/viacep"
 import type { UpdateEstablishmentInput } from "@/lib/validations/establishment"
 
 export async function updateEstablishment(
@@ -18,6 +19,13 @@ export async function updateEstablishment(
       timezone: input.timezone,
       logoUrl: input.logoUrl?.trim() || null,
       coverUrl: input.coverUrl?.trim() || null,
+      cep: input.cep ? cepDigits(input.cep) : null,
+      street: input.street?.trim() || null,
+      streetNumber: input.streetNumber?.trim() || null,
+      complement: input.complement?.trim() || null,
+      neighborhood: input.neighborhood?.trim() || null,
+      city: input.city?.trim() || null,
+      state: input.state?.trim().toUpperCase() || null,
     },
   })
 }

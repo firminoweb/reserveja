@@ -11,7 +11,7 @@ export default async function AdminHomePage() {
     ])
 
   return (
-    <div className="px-8 py-8">
+    <div className="px-4 py-6 md:px-8 md:py-8">
       <h1 className="text-2xl font-bold">Visão geral</h1>
       <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
