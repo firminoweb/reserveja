@@ -11,6 +11,13 @@ import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatLocal } from "@/lib/time"
@@ -36,6 +43,7 @@ type Props = {
 
 const DAYS_AHEAD = 30
 const VISIBLE = 7
+const ANY_PROFESSIONAL = "__any__"
 
 type Day = {
   iso: string
@@ -78,6 +86,11 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
   const [weekStart, setWeekStart] = useState(0)
   const [calendarOpen, setCalendarOpen] = useState(false)
 
+  const hasMultiple = professionals.length > 1
+  const [selectedProId, setSelectedProId] = useState<string>(
+    hasMultiple ? ANY_PROFESSIONAL : professionals[0]?.id ?? ANY_PROFESSIONAL,
+  )
+
   const visibleDays = days.slice(weekStart, weekStart + VISIBLE)
   const canPrev = weekStart > 0
   const canNext = weekStart + VISIBLE < days.length
@@ -107,15 +120,27 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
     },
   })
 
-  const byProfessional = useMemo(() => {
-    const map = new Map<string, Slot[]>()
-    for (const s of data?.slots ?? []) {
-      const arr = map.get(s.professionalId) ?? []
-      arr.push(s)
-      map.set(s.professionalId, arr)
-    }
-    return map
-  }, [data])
+  const professionalById = useMemo(() => {
+    const m = new Map<string, Professional>()
+    for (const p of professionals) m.set(p.id, p)
+    return m
+  }, [professionals])
+
+  const filteredSlots = useMemo(() => {
+    const all = data?.slots ?? []
+    const filtered =
+      selectedProId === ANY_PROFESSIONAL
+        ? all
+        : all.filter((s) => s.professionalId === selectedProId)
+    // Sort by start, dedupe identical times keeping the first occurrence (qualquer
+    // profissional pode ter slots iguais; mantém o primeiro).
+    return [...filtered].sort((a, b) => a.startsAt.localeCompare(b.startsAt))
+  }, [data, selectedProId])
+
+  const headerPro =
+    selectedProId === ANY_PROFESSIONAL
+      ? null
+      : professionalById.get(selectedProId) ?? null
 
   function pickSlot(slot: Slot) {
     const params = new URLSearchParams({
@@ -216,9 +241,29 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
         </div>
       </div>
 
+      {hasMultiple ? (
+        <div>
+          <label className="text-xs font-medium text-muted-foreground">
+            Profissional
+          </label>
+          <Select value={selectedProId} onValueChange={setSelectedProId}>
+            <SelectTrigger className="mt-1.5 w-full">
+              <SelectValue placeholder="Escolha um profissional" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ANY_PROFESSIONAL}>Sem preferência</SelectItem>
+              {professionals.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      ) : null}
+
       {isLoading ? (
         <div className="space-y-3">
-          <Skeleton className="h-32 w-full" />
           <Skeleton className="h-32 w-full" />
         </div>
       ) : isError ? (
@@ -228,52 +273,62 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
           Nenhum profissional disponível para este serviço.
         </p>
       ) : (
-        <div className="space-y-4">
-          {professionals.map((pro) => {
-            const slots = byProfessional.get(pro.id) ?? []
-            return (
-              <div
-                key={pro.id}
-                className="rounded-xl border bg-card p-4 shadow-sm"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  {pro.photoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={pro.photoUrl}
-                      alt=""
-                      className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
-                    />
-                  ) : (
-                    <div className="size-10 shrink-0 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center">
-                      {pro.name.charAt(0).toUpperCase()}
-                    </div>
-                  )}
-                  <div className="font-medium truncate">{pro.name}</div>
+        <div className="rounded-xl border bg-card p-4 shadow-sm">
+          {headerPro ? (
+            <div className="flex items-center gap-3 min-w-0">
+              {headerPro.photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={headerPro.photoUrl}
+                  alt=""
+                  className="size-10 shrink-0 rounded-full object-cover ring-2 ring-primary/15"
+                />
+              ) : (
+                <div className="size-10 shrink-0 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center">
+                  {headerPro.name.charAt(0).toUpperCase()}
                 </div>
-                {slots.length === 0 ? (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    Sem horários disponíveis neste dia.
-                  </p>
-                ) : (
-                  <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {slots.map((s) => (
-                      <Button
-                        key={s.startsAt}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className="border-primary/30 hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                        onClick={() => pickSlot(s)}
-                      >
-                        {formatLocal(new Date(s.startsAt), timezone, "HH:mm")}
-                      </Button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )
-          })}
+              )}
+              <div className="font-medium truncate">{headerPro.name}</div>
+            </div>
+          ) : (
+            <div className="text-sm font-medium text-muted-foreground">
+              Horários disponíveis
+            </div>
+          )}
+
+          {filteredSlots.length === 0 ? (
+            <p className="mt-3 text-xs text-muted-foreground">
+              Sem horários disponíveis neste dia.
+            </p>
+          ) : (
+            <div className="mt-3 grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {filteredSlots.map((s) => {
+                const pro = professionalById.get(s.professionalId)
+                const showProLabel = headerPro === null && hasMultiple
+                return (
+                  <Button
+                    key={`${s.startsAt}-${s.professionalId}`}
+                    type="button"
+                    variant="outline"
+                    className={cn(
+                      "h-auto flex-col gap-0.5 py-2 border-primary/30",
+                      "hover:bg-primary hover:text-primary-foreground hover:border-primary",
+                    )}
+                    onClick={() => pickSlot(s)}
+                  >
+                    <span className="font-semibold">
+                      {formatLocal(new Date(s.startsAt), timezone, "HH:mm")}
+                    </span>
+                    {showProLabel && pro ? (
+                      <span className="text-[10px] leading-tight opacity-70 truncate max-w-full">
+                        {pro.name.split(" ")[0]}
+                      </span>
+                    ) : null}
+                  </Button>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

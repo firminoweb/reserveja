@@ -40,21 +40,27 @@ export default async function AgendarStep2(props: PageProps<"/[slug]/agendar/pro
 
   return (
     <main className="mx-auto max-w-2xl px-4 md:px-6 py-6 md:py-8">
-      <Link
-        href={`/${slug}/agendar`}
-        className="text-xs text-muted-foreground hover:text-foreground"
-      >
-        ← Trocar serviço
-      </Link>
-
-      <div className="mt-6">
-        <Stepper current={2} />
-      </div>
+      <Stepper current={2} />
 
       <h1 className="mt-6 text-2xl font-bold">Escolha um horário</h1>
-      <p className="mt-1 text-sm text-muted-foreground">
-        {service.name} · {service.durationMin} min · R$ {(service.priceCents / 100).toFixed(2).replace(".", ",")}
-      </p>
+
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border bg-primary/5 border-primary/20 p-3.5">
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-wide font-medium text-primary/70">
+            Serviço selecionado
+          </div>
+          <div className="mt-0.5 font-semibold truncate">{service.name}</div>
+          <div className="text-xs text-muted-foreground">
+            {service.durationMin} min · R$ {(service.priceCents / 100).toFixed(2).replace(".", ",")}
+          </div>
+        </div>
+        <Link
+          href={`/${slug}/agendar`}
+          className="shrink-0 text-xs font-medium text-primary hover:underline"
+        >
+          Trocar
+        </Link>
+      </div>
 
       <SlotPicker
         slug={slug}
