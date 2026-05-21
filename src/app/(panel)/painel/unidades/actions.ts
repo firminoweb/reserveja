@@ -42,6 +42,7 @@ export async function setSelectedUnitAction(unitId: string): Promise<void> {
     path: "/",
     httpOnly: false,
     sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 365,
   })
   revalidatePath("/painel", "layout")

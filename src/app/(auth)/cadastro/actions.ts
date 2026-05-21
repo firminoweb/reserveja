@@ -25,14 +25,23 @@ export async function registerAction(input: SignUpInput): Promise<ActionResult> 
     await registerOwner(parsed.data)
   } catch (err) {
     if (err instanceof RegisterError) {
+      // EMAIL_TAKEN intencionalmente NÃO destaca o campo email (anti-enumeration):
+      // o usuário legítimo recebe email separado com instruções de login/reset;
+      // o atacante recebe a mesma mensagem genérica que poderia vir de qualquer
+      // outra falha de cadastro.
+      if (err.code === "EMAIL_TAKEN") {
+        return {
+          ok: false,
+          message: "Não foi possível concluir o cadastro. Se você já tem conta, verifique seu e-mail.",
+        }
+      }
       const fieldMap = {
-        EMAIL_TAKEN: "email",
         SLUG_TAKEN: "slug",
         PASSWORD_LEAKED: "password",
       } as const
       return {
         ok: false,
-        field: fieldMap[err.code],
+        field: fieldMap[err.code as "SLUG_TAKEN" | "PASSWORD_LEAKED"],
         message: err.message,
       }
     }

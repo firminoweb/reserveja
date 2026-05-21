@@ -1,10 +1,21 @@
 import { NextResponse, after, type NextRequest } from "next/server"
 
+import { clientIp, rateLimit } from "@/lib/rate-limit"
 import { createBooking, BookingError } from "@/server/booking/create"
 import { sendBookingConfirmation } from "@/server/notifications/booking"
 import { createBookingSchema } from "@/lib/validations/booking"
 
 export async function POST(req: NextRequest) {
+  // 10 bookings/min por IP. Defende contra spam de agenda. Limite generoso porque
+  // família compartilhando IP pública (NAT) pode legitimamente criar vários.
+  const limited = rateLimit(`booking:${clientIp(req)}`, {
+    limit: 10,
+    windowMs: 60_000,
+  })
+  if (!limited.success) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 })
+  }
+
   const body = await req.json().catch(() => null)
   const parsed = createBookingSchema.safeParse(body)
   if (!parsed.success) {

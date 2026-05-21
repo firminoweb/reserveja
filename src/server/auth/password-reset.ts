@@ -89,10 +89,13 @@ export async function confirmPasswordReset(rawToken: string, newPassword: string
     )
   }
 
-  const passwordHash = await bcrypt.hash(newPassword, 10)
+  const passwordHash = await bcrypt.hash(newPassword, 12)
 
   await db.$transaction([
-    db.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+    db.user.update({
+      where: { id: record.userId },
+      data: { passwordHash, mustChangePassword: false },
+    }),
     db.passwordResetToken.update({
       where: { id: record.id },
       data: { usedAt: new Date() },

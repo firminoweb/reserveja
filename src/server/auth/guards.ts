@@ -29,9 +29,24 @@ export async function requireSession() {
   return session
 }
 
+/**
+ * Carrega flags do usuário do banco e redireciona pra /trocar-senha se o usuário
+ * tem `mustChangePassword: true`. Use no início de layouts de área autenticada
+ * (painel, admin). A própria página de troca NÃO deve chamar isso pra evitar
+ * loop — ela só precisa de `requireSession()`.
+ */
+export async function enforcePasswordChange(userId: string) {
+  const flags = await db.user.findUnique({
+    where: { id: userId },
+    select: { mustChangePassword: true },
+  })
+  if (flags?.mustChangePassword) redirect("/trocar-senha")
+}
+
 export async function requireRole(role: Role) {
   const session = await requireSession()
   if (session.user.role !== role) redirect("/")
+  await enforcePasswordChange(session.user.id)
   return session
 }
 
@@ -64,6 +79,8 @@ export async function requireOwnerMembership() {
   })
   if (establishments.length === 0) redirect("/cadastro")
 
+  await enforcePasswordChange(session.user.id)
+
   const jar = await cookies()
   const selectedId = jar.get(UNIT_COOKIE)?.value
   const selected = establishments.find((e) => e.id === selectedId)
@@ -86,6 +103,16 @@ export async function getApiOwnerContext() {
   const session = await getEffectiveSession()
   if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
+  }
+  // Bloqueia uso de API por usuário com senha temporária ainda não trocada.
+  // Sem isso, alguém com a senha vazada poderia mutar dados via curl mesmo
+  // sem passar pela tela de troca.
+  const flags = await db.user.findUnique({
+    where: { id: session.user.id },
+    select: { mustChangePassword: true },
+  })
+  if (flags?.mustChangePassword) {
+    return NextResponse.json({ error: "must_change_password" }, { status: 403 })
   }
   const membership = await db.membership.findFirst({
     where: { userId: session.user.id },

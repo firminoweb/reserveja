@@ -77,13 +77,14 @@ export async function inviteMember(
     }
   } else {
     tempPassword = generateTempPassword()
-    const passwordHash = await bcrypt.hash(tempPassword, 10)
+    const passwordHash = await bcrypt.hash(tempPassword, 12)
     user = await db.user.create({
       data: {
         email: input.email,
         passwordHash,
         name: input.name,
         role: "OWNER", // Role do sistema (User.role) — não confundir com Membership.role
+        mustChangePassword: true, // forçar troca na primeira entrada
       },
       select: { id: true, name: true, email: true },
     })

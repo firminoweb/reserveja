@@ -25,15 +25,36 @@ enum Role {
 }
 
 model User {
-  id            String                @id @default(cuid())
-  email         String                @unique
-  passwordHash  String
-  name          String
-  role          Role                  @default(OWNER)
-  memberships   Membership[]
-  resetTokens   PasswordResetToken[]
-  createdAt     DateTime              @default(now())
-  updatedAt     DateTime              @updatedAt
+  id                 String                @id @default(cuid())
+  email              String                @unique
+  passwordHash       String
+  name               String
+  role               Role                  @default(OWNER)
+  // Setado quando senha foi gerada pelo sistema (convite ou reset por admin).
+  // Guard redireciona pra /trocar-senha até virar false.
+  mustChangePassword Boolean               @default(false)
+  memberships        Membership[]
+  resetTokens        PasswordResetToken[]
+  auditEvents        AuditLog[]            @relation("AuditLogActor")
+  createdAt          DateTime              @default(now())
+  updatedAt          DateTime              @updatedAt
+}
+
+// Trilha de auditoria persistente. Hoje só registra impersonação por ADMIN —
+// pode ser estendida pra outros eventos sensíveis (mudança de role, suspensão
+// de organização, exclusão de conta etc.).
+model AuditLog {
+  id           String   @id @default(cuid())
+  actorId      String
+  actor        User     @relation("AuditLogActor", fields: [actorId], references: [id], onDelete: Cascade)
+  targetUserId String?
+  action       String   // "IMPERSONATE_START", "IMPERSONATE_STOP", ...
+  metadata     Json?
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetUserId, createdAt])
 }
 
 // Token de reset de senha. Guardamos só o hash (SHA-256) — quem tem o token

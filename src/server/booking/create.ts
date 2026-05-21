@@ -21,8 +21,11 @@ function newPublicToken(): string {
  * se houver conflito.
  */
 export async function createBooking(input: CreateBookingInput) {
-  const establishment = await db.establishment.findUnique({
-    where: { slug: input.establishmentSlug },
+  const establishment = await db.establishment.findFirst({
+    where: {
+      slug: input.establishmentSlug,
+      organization: { status: { not: "SUSPENDED" } },
+    },
   })
   if (!establishment) {
     throw new BookingError("ESTABLISHMENT_NOT_FOUND", "Estabelecimento não encontrado")

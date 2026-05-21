@@ -37,14 +37,6 @@ export async function isSlugAvailable(slug: string): Promise<boolean> {
 }
 
 export async function registerOwner(input: SignUpInput) {
-  const existing = await db.user.findUnique({
-    where: { email: input.email },
-    select: { id: true },
-  })
-  if (existing) {
-    throw new RegisterError("EMAIL_TAKEN", "Esse e-mail já está em uso")
-  }
-
   const slug = slugify(input.slug)
   const slugFree = await isSlugAvailable(slug)
   if (!slugFree) {
@@ -58,7 +50,13 @@ export async function registerOwner(input: SignUpInput) {
     )
   }
 
-  const passwordHash = await bcrypt.hash(input.password, 10)
+  // Email duplicado é detectado abaixo via unique constraint do Postgres (23505).
+  // Não checamos antes pra não vazar via timing/resposta se o email já existe
+  // (anti-enumeration). Se o cadastro falhar por duplicidade, devolvemos a
+  // mesma mensagem genérica que daríamos em sucesso e enviamos um email pro
+  // endereço informado dizendo "já existe conta — faça login".
+
+  const passwordHash = await bcrypt.hash(input.password, 12)
   const whatsappE164 = toE164BR(input.whatsapp)!
   const taxId = input.taxId ? taxIdDigits(input.taxId) : null
 
@@ -121,11 +119,21 @@ export async function registerOwner(input: SignUpInput) {
       }
     })
   } catch (err: unknown) {
-    // Corrida: alguém usou o slug entre o check e o insert. Postgres unique
-    // violation = SQLSTATE 23505.
+    // Postgres unique violation = SQLSTATE 23505. Tanto slug duplicado quanto
+    // email duplicado caem aqui. Como o slug já foi pré-checado acima, o caso
+    // comum é email duplicado.
     const code = (err as { code?: string }).code
+    const meta = (err as { meta?: { target?: string[] | string } }).meta
+    const targetStr = Array.isArray(meta?.target) ? meta.target.join(",") : meta?.target ?? ""
     if (code === "23505") {
-      throw new RegisterError("SLUG_TAKEN", "Esse endereço já está em uso — escolha outro")
+      if (targetStr.includes("slug")) {
+        throw new RegisterError("SLUG_TAKEN", "Esse endereço já está em uso — escolha outro")
+      }
+      // Email já cadastrado: dispara email "já existe conta" e devolve EMAIL_TAKEN
+      // como sinal genérico — a UI deve mostrar mensagem que não confirme nem nega
+      // a existência do email pro atacante (ex.: "Conta criada. Verifique seu email").
+      void sendExistingAccountEmail(input.email)
+      throw new RegisterError("EMAIL_TAKEN", "Não foi possível concluir o cadastro com esses dados.")
     }
     throw err
   }
@@ -135,6 +143,36 @@ export async function registerOwner(input: SignUpInput) {
   void sendWelcomeEmail(result.user, result.establishment)
 
   return result
+}
+
+async function sendExistingAccountEmail(email: string) {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Tentativa de cadastro no Reserve Já",
+      text: [
+        `Alguém (talvez você) tentou criar uma nova conta no Reserve Já com este email.`,
+        ``,
+        `Já existe uma conta com esse endereço. Se foi você:`,
+        `- Faça login em ${appUrl}/login`,
+        `- Esqueceu a senha? ${appUrl}/recuperar-senha`,
+        ``,
+        `Se não foi você, pode ignorar este email — nada foi alterado na sua conta.`,
+      ].join("\n"),
+      html: `
+        <p>Alguém (talvez você) tentou criar uma nova conta no <strong>Reserve Já</strong> com este email.</p>
+        <p>Já existe uma conta com esse endereço.</p>
+        <ul>
+          <li><a href="${appUrl}/login">Fazer login</a></li>
+          <li><a href="${appUrl}/recuperar-senha">Recuperar senha</a></li>
+        </ul>
+        <p style="color:#6b7280;font-size:13px">Se não foi você, pode ignorar — nada foi alterado na sua conta.</p>
+      `,
+    })
+  } catch {
+    // Fail-open. Envio de email é best-effort.
+  }
 }
 
 async function sendWelcomeEmail(

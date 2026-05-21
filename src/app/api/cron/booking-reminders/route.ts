@@ -1,6 +1,15 @@
+import { timingSafeEqual } from "node:crypto"
+
 import { NextResponse, type NextRequest } from "next/server"
 
 import { dispatchDueReminders } from "@/server/booking/reminders"
+
+function safeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a)
+  const bufB = Buffer.from(b)
+  if (bufA.length !== bufB.length) return false
+  return timingSafeEqual(bufA, bufB)
+}
 
 /**
  * Endpoint para scheduler externo (Vercel Cron, Railway Cron, etc.).
@@ -20,7 +29,7 @@ export async function GET(req: NextRequest) {
   const provided =
     header?.startsWith("Bearer ") ? header.slice("Bearer ".length) : queryKey
 
-  if (provided !== secret) {
+  if (!provided || !safeEqual(provided, secret)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
 

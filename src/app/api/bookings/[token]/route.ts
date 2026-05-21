@@ -10,7 +10,8 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
       id: true,
       publicToken: true,
       clientName: true,
-      clientPhone: true,
+      // clientPhone intencionalmente omitido — minimização de PII (LGPD).
+      // Endpoint público (basta o token na URL) não deve vazar telefone do cliente.
       startsAt: true,
       endsAt: true,
       status: true,

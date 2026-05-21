@@ -10,7 +10,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: stri
   const professionals = await db.professional.findMany({
     where: {
       active: true,
-      establishment: { slug },
+      establishment: {
+        slug,
+        organization: { status: { not: "SUSPENDED" } },
+      },
       ...(serviceId ? { services: { some: { serviceId } } } : {}),
     },
     select: {

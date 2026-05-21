@@ -7,7 +7,10 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ slug: stri
   const services = await db.service.findMany({
     where: {
       active: true,
-      establishment: { slug },
+      establishment: {
+        slug,
+        organization: { status: { not: "SUSPENDED" } },
+      },
     },
     select: {
       id: true,

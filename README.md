@@ -5,9 +5,12 @@ outros prestadores de serviço. Cliente agenda em 3 cliques pelo link/QR-code
 do estabelecimento — sem app, sem cadastro. O dono gerencia tudo num painel
 simples; o super-admin gerencia tudo num painel ainda mais simples.
 
-> **Quer só editar, rodar e subir?** Vá direto para
-> [`docs/desenvolvimento-e-deploy.md`](docs/desenvolvimento-e-deploy.md).
-> Esse README é o panorama; o doc de deploy é o manual.
+> **Documentação operacional**:
+> - [`docs/desenvolvimento-e-deploy.md`](docs/desenvolvimento-e-deploy.md) — editar, rodar, testar e subir código + banco
+> - [`docs/whatsapp-evolution.md`](docs/whatsapp-evolution.md) — plugar WhatsApp via Evolution API (VPS + Docker)
+> - [`docs/auditoria-seguranca.md`](docs/auditoria-seguranca.md) — relatório da varredura de segurança e fixes aplicados
+>
+> Esse README é o panorama; os docs em `docs/` são os manuais.
 
 ## Stack
 
@@ -71,7 +74,9 @@ prisma/
 └── seed.ts              ← popula dev + aplica constraint EXCLUDE (idempotente)
 
 docs/
-└── desenvolvimento-e-deploy.md   ← passo a passo de edição, teste, banco e deploy
+├── desenvolvimento-e-deploy.md   ← passo a passo de edição, teste, banco e deploy
+├── whatsapp-evolution.md         ← setup do WhatsApp (Evolution API self-hosted)
+└── auditoria-seguranca.md        ← relatório da varredura e fixes
 ```
 
 **Convenção**: lógica de domínio fica em `src/server/`. Route Handlers (`src/app/api/`)

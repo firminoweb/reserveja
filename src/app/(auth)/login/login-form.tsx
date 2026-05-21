@@ -19,10 +19,21 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 
+// Aceita apenas caminhos absolutos do próprio app (`/painel/...`). Bloqueia
+// URLs externas (`https://evil.com`) e protocolo-relativos (`//evil.com`) que
+// um atacante poderia injetar via `?from=` pra phishing pós-login.
+function safeRedirectPath(raw: string | null): string | null {
+  if (!raw) return null
+  if (!raw.startsWith("/")) return null
+  if (raw.startsWith("//")) return null
+  if (raw.startsWith("/\\")) return null
+  return raw
+}
+
 export function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const from = params.get("from")
+  const from = safeRedirectPath(params.get("from"))
 
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),

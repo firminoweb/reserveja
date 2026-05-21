@@ -51,10 +51,10 @@ export async function resetUserPasswordAction(
   if (!user) return { ok: false, message: "Usuário não encontrado" }
 
   const tempPassword = generateTempPassword()
-  const passwordHash = await bcrypt.hash(tempPassword, 10)
+  const passwordHash = await bcrypt.hash(tempPassword, 12)
   await db.user.update({
     where: { id: userId },
-    data: { passwordHash },
+    data: { passwordHash, mustChangePassword: true },
   })
   // Invalida tokens de reset pendentes — segurança.
   await db.passwordResetToken.deleteMany({
@@ -98,9 +98,15 @@ export async function impersonateUserAction(
     maxAge: 60 * 60 * 2, // 2h
   })
 
-  console.log(
-    `[impersonate] admin=${realSession.user.id} (${realSession.user.email}) → target=${target.id} (${target.email}) at ${new Date().toISOString()}`,
-  )
+  // Trilha de auditoria persistente — não confiar em stdout/logs de plataforma.
+  await db.auditLog.create({
+    data: {
+      actorId: realSession.user.id,
+      targetUserId: target.id,
+      action: "IMPERSONATE_START",
+      metadata: { actorEmail: realSession.user.email, targetEmail: target.email },
+    },
+  })
 
   // Redireciona pra área natural do alvo. Throw NEXT_REDIRECT — server action
   // exit normal.
@@ -111,12 +117,16 @@ export async function stopImpersonatingAction(): Promise<void> {
   const jar = await cookies()
   const targetId = jar.get(IMPERSONATE_COOKIE)?.value
   jar.delete(IMPERSONATE_COOKIE)
-  // Log do encerramento — útil pra trilha de auditoria via stdout/Vercel.
   const realSession = await auth()
   if (realSession?.user && targetId) {
-    console.log(
-      `[impersonate-stop] admin=${realSession.user.id} (${realSession.user.email}) ← target=${targetId} at ${new Date().toISOString()}`,
-    )
+    await db.auditLog.create({
+      data: {
+        actorId: realSession.user.id,
+        targetUserId: targetId,
+        action: "IMPERSONATE_STOP",
+        metadata: { actorEmail: realSession.user.email },
+      },
+    })
   }
   redirect("/admin")
 }

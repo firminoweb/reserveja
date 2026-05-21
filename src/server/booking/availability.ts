@@ -33,8 +33,11 @@ type Slot = {
  *  4. Remove slots que colidem com bookings ativos ou time blocks
  */
 export async function getAvailability(args: GetAvailabilityArgs): Promise<Slot[]> {
-  const establishment = await db.establishment.findUnique({
-    where: { slug: args.establishmentSlug },
+  const establishment = await db.establishment.findFirst({
+    where: {
+      slug: args.establishmentSlug,
+      organization: { status: { not: "SUSPENDED" } },
+    },
     select: { id: true, timezone: true },
   })
   if (!establishment) return []

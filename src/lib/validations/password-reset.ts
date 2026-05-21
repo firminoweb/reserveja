@@ -9,5 +9,11 @@ export const confirmResetSchema = z.object({
   password: z.string().min(8, "Senha precisa de pelo menos 8 caracteres"),
 })
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Informe a senha atual"),
+  newPassword: z.string().min(8, "Senha precisa de pelo menos 8 caracteres"),
+})
+
 export type RequestResetInput = z.infer<typeof requestResetSchema>
 export type ConfirmResetInput = z.infer<typeof confirmResetSchema>
+export type ChangePasswordInput = z.infer<typeof changePasswordSchema>

@@ -18,11 +18,21 @@ export const createEstablishmentSchema = z.object({
   timezone: z.string().default("America/Sao_Paulo"),
 })
 
+// URLs de mídia (logo, cover, foto): só HTTPS. Bloqueia `data:`, `javascript:`,
+// `http:` (que abriria buraco de mixed-content), etc. Combinado com CSP `img-src
+// https:` no next.config dá defesa em camadas.
 const optionalUrl = z
   .string()
   .trim()
   .max(2048)
-  .url("URL inválida")
+  .refine((u) => {
+    if (!u) return true
+    try {
+      return new URL(u).protocol === "https:"
+    } catch {
+      return false
+    }
+  }, "Use uma URL https://")
   .optional()
   .or(z.literal(""))
 

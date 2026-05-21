@@ -8,9 +8,25 @@ const scheduleInterval = z
   })
   .refine((v) => v.endMin > v.startMin, "Fim deve ser depois do início")
 
+// Só HTTPS (bloqueia data:/javascript:/http:). Ver nota em validations/establishment.ts.
+const photoUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((u) => {
+    if (!u) return true
+    try {
+      return new URL(u).protocol === "https:"
+    } catch {
+      return false
+    }
+  }, "Use uma URL https://")
+  .optional()
+  .or(z.literal(""))
+
 export const createProfessionalSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto").max(120, "Nome muito longo"),
-  photoUrl: z.string().url("URL inválida").optional().or(z.literal("")),
+  photoUrl: photoUrlSchema,
   active: z.boolean().default(true),
   serviceIds: z.array(z.string()).optional(),
   // Quando schedules é undefined → segue horário do estabelecimento. Quando
