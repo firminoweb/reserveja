@@ -1,104 +1,122 @@
 # Reserve Já
 
-Sistema de agendamentos para salões, barbearias, mecânicos e outros prestadores
-de serviço. Cliente agenda em 3 cliques pelo link/QR-code do estabelecimento —
-sem app, sem cadastro. O dono gerencia tudo num painel simples.
+Sistema de agendamentos para salões, barbearias, mecânicos, estética e
+outros prestadores de serviço. Cliente agenda em 3 cliques pelo link/QR-code
+do estabelecimento — sem app, sem cadastro. O dono gerencia tudo num painel
+simples; o super-admin gerencia tudo num painel ainda mais simples.
+
+> **Quer só editar, rodar e subir?** Vá direto para
+> [`docs/desenvolvimento-e-deploy.md`](docs/desenvolvimento-e-deploy.md).
+> Esse README é o panorama; o doc de deploy é o manual.
 
 ## Stack
 
-- **Next.js 16** (App Router, Turbopack, React 19.2)
-- **TypeScript** estrito
+- **Next.js 16** (App Router, Turbopack, React 19.2) — público + painel + admin no mesmo app
+- **TypeScript** estrito + **ESLint** flat config
 - **Tailwind v4** + **shadcn/ui** (preset radix-vega)
-- **Prisma 7** + **PostgreSQL 16**
-- **NextAuth v5** (beta, Auth.js) com Credentials provider
-- **Zod** + **React Hook Form**
+- **Prisma 7** + **PostgreSQL 16** (Docker em dev, **Neon** em prod)
+- **NextAuth v5** beta (Auth.js) com Credentials provider + JWT
+- **Zod** (com locale pt-BR) + **React Hook Form**
 - **TanStack Query** (cache cliente)
-- **date-fns** + **date-fns-tz** (timezone-aware)
-- **Evolution API** (WhatsApp, integração futura)
-- **Yarn** 1.22
+- **date-fns** + **date-fns-tz** (timezone-aware: UTC no banco, conversão na UI)
+- **Resend** (email transacional) + **Evolution API** (WhatsApp, futuro)
+- **Hospedagem**: **Vercel** (app) + **Neon** (Postgres)
+- **Yarn** 1.22 (não npm, não pnpm)
 
-## Arquitetura
+## Hierarquia de dados
+
+```
+Organization (empresa/marca)
+ ├── Establishment (unidade/filial)   ← slug público, services, professionals, bookings
+ │    ├── WorkingHour
+ │    ├── Service
+ │    ├── Professional ── ProfessionalSchedule (override de horário)
+ │    │                └─ ProfessionalService
+ │    ├── TimeBlock (feriado, almoço, folga)
+ │    └── Booking (status, publicToken para link do cliente)
+ └── Membership (usuário ↔ organização)
+      └── MembershipUnit (ACL por unidade — vazio = acesso total)
+```
+
+- **Per-unit ACL**: sem linhas em `MembershipUnit` = acesso a todas as unidades; com linhas = restrito.
+- **Unidade ativa no painel**: cookie `rj_unit` (constante `UNIT_COOKIE` em `src/server/auth/guards.ts`).
+- **Roles**: `ADMIN` (super-admin do produto), `OWNER` (dono da org), `STAFF` (funcionário com acesso restrito).
+
+## Arquitetura de código
 
 ```
 src/
 ├── app/
-│   ├── (public)/        Landing, vitrine do salão e fluxo de agendamento
+│   ├── (public)/        Landing, vitrine do estabelecimento e fluxo de agendamento
 │   ├── (panel)/         Painel do estabelecimento (dono/staff)
-│   ├── (admin)/         Super-admin (você e sócios)
-│   ├── (auth)/          Login e cadastro
+│   ├── (admin)/         Super-admin
+│   ├── (auth)/          Login, cadastro e reset de senha
 │   ├── api/             Route Handlers (REST)
 │   ├── manifest.ts      PWA manifest
 │   └── providers.tsx    QueryClient + SessionProvider
 ├── components/
 │   ├── ui/              shadcn/ui (radix)
-│   └── …                booking, panel, marketing
-├── lib/                 db, auth, time, whatsapp, validações (Zod)
-├── server/              lógica de domínio (booking, auth guards…)
-├── types/               extensões de tipos (next-auth)
-└── proxy.ts             Next 16: antigo `middleware.ts`
+│   ├── booking/         Stepper, ServiceCard, SlotPicker, BookingForm
+│   ├── panel/           Agenda, clientes, histórico
+│   ├── admin/           Listas e formulários do super-admin
+│   └── site/            Header, footer, marketing
+├── lib/                 db, auth, time, phone, tax, hibp, validations/ (Zod)
+├── server/              Lógica de domínio (booking/, auth/guards.ts, admin/, team/…)
+├── types/               Extensões de tipos (next-auth)
+└── proxy.ts             Next 16: o antigo `middleware.ts`
 
 prisma/
 ├── schema.prisma
-└── seed.ts
+├── migrations/          ← versionadas no git, aplicadas em prod pelo build
+└── seed.ts              ← popula dev + aplica constraint EXCLUDE (idempotente)
+
+docs/
+└── desenvolvimento-e-deploy.md   ← passo a passo de edição, teste, banco e deploy
 ```
 
-A camada `server/` fica entre as rotas HTTP e o Prisma. Isso permite extrair
-para um serviço NestJS separado no futuro sem reescrever a lógica.
+**Convenção**: lógica de domínio fica em `src/server/`. Route Handlers (`src/app/api/`)
+só validam input (Zod) e chamam funções de `server/`. Mantém portável para extrair
+para um serviço NestJS no futuro sem reescrever a lógica.
 
-## Setup
-
-### 1. Pré-requisitos
-
-- Node 20.9+ (testado em 22.x)
-- Yarn 1.22
-- Docker + Docker Compose (para Postgres local)
-
-### 2. Instalação
+## Setup local (TL;DR)
 
 ```bash
 yarn install
-cp .env.example .env
+cp .env.example .env          # edite se necessário; defaults funcionam pra dev
+yarn db:up                    # sobe Postgres no Docker
+yarn db:migrate               # aplica migrations
+yarn db:seed                  # popula dados de exemplo + constraint anti-overlap
+yarn dev                      # http://localhost:3000
 ```
 
-Edite `.env` se precisar — os valores default funcionam pra dev local.
-Gere um `AUTH_SECRET` decente:
+Conta de teste após o seed:
 
-```bash
-openssl rand -base64 32
-```
+| Email                  | Senha         | Role  | Onde     |
+| ---------------------- | ------------- | ----- | -------- |
+| `admin@reserveja.app`  | `troca-isso`  | ADMIN | `/admin` |
+| `joao@exemplo.com`     | `troca-isso`  | OWNER | `/painel` |
 
-### 3. Banco
+Estabelecimento de exemplo: **Barbearia do João** em `/barbearia-do-joao`.
 
-```bash
-yarn db:up           # sobe Postgres no Docker
-yarn db:migrate      # aplica migrations (cria as tabelas)
-yarn db:seed         # popula com dados de exemplo + constraint anti-overlap
-```
-
-O seed cria:
-- **admin@reserveja.app** / `troca-isso` — super admin
-- **joao@exemplo.com** / `troca-isso` — dono da Barbearia do João
-- Estabelecimento `/barbearia-do-joao` com 2 serviços e 2 profissionais
-
-### 4. Dev
-
-```bash
-yarn dev
-```
-
-Abra <http://localhost:3000>.
+> **Detalhes, comandos do dia a dia e como subir o banco em produção**:
+> [`docs/desenvolvimento-e-deploy.md`](docs/desenvolvimento-e-deploy.md).
 
 ## Rotas-chave
 
-| URL                                | O quê                          |
-| ---------------------------------- | ------------------------------ |
-| `/`                                | Landing                        |
-| `/barbearia-do-joao`               | Vitrine pública do salão       |
-| `/barbearia-do-joao/agendar`       | Fluxo de agendamento (3 passos)|
-| `/barbearia-do-joao/b/<token>`     | Página do cliente p/ ver/cancelar |
-| `/login`                           | Login                          |
-| `/painel`                          | Agenda do dia (dono)           |
-| `/admin`                           | Super-admin                    |
+| URL                                | O quê                                 |
+| ---------------------------------- | ------------------------------------- |
+| `/`                                | Landing                               |
+| `/cadastro`                        | Onboarding self-service               |
+| `/login`                           | Login                                 |
+| `/barbearia-do-joao`               | Vitrine pública do estabelecimento    |
+| `/barbearia-do-joao/agendar`       | Fluxo de agendamento (3 passos)       |
+| `/barbearia-do-joao/b/<token>`     | Página do cliente p/ ver/cancelar     |
+| `/painel`                          | Agenda do dia (dono/staff)            |
+| `/painel/clientes`                 | Base de clientes                      |
+| `/painel/historico`                | Histórico de agendamentos             |
+| `/painel/equipe`                   | Convidar/gerenciar staff (owner-only) |
+| `/painel/unidades`                 | Criar/trocar unidades (owner-only)    |
+| `/admin`                           | Super-admin                           |
 
 ## API (REST)
 
@@ -111,16 +129,14 @@ POST   /api/bookings
 GET    /api/bookings/[token]
 PATCH  /api/bookings/[token]/cancel
 POST   /api/webhooks/evolution
+GET    /api/cron/booking-reminders        (protegido por CRON_SECRET)
 ```
 
-Endpoints administrativos (`POST /api/establishments`, CRUD de services/professionals)
-estão como stubs `501 Not Implemented` aguardando a próxima fase.
+## Notas técnicas relevantes
 
-## Notas técnicas
+### Anti-double-booking (constraint Postgres)
 
-### Anti-double-booking
-
-O `seed.ts` aplica uma constraint Postgres em `Booking`:
+O `seed.ts` aplica uma `EXCLUDE USING gist` em `Booking`:
 
 ```sql
 EXCLUDE USING gist (
@@ -129,38 +145,54 @@ EXCLUDE USING gist (
 ) WHERE (status IN ('PENDING', 'CONFIRMED'))
 ```
 
-Isso impede sobreposição entre dois bookings ativos do mesmo profissional no
-nível do banco — funciona mesmo com requests simultâneas. O handler
-`createBooking` captura o erro `23P01` (`exclusion_violation`) e retorna 409.
+Impede sobreposição entre dois bookings ativos do mesmo profissional no
+nível do banco — funciona mesmo com requests simultâneas. `createBooking` em
+`src/server/booking/create.ts` captura o SQLSTATE `23P01` (exclusion_violation)
+e responde 409.
 
-### Next.js 16 — diferenças relevantes
+### Next.js 16 — diferenças vs Next 15
 
-- `middleware.ts` foi renomeado para **`proxy.ts`** (função `proxy`, runtime nodejs only)
-- `params` e `searchParams` são **Promises** — sempre `await` ou `use()`
-- Helpers globais `PageProps<'/route/[slug]'>` e `RouteContext<'/api/[id]'>`
-- `next lint` removido — use ESLint direto
+- `middleware.ts` foi renomeado para **`proxy.ts`** (função `proxy`, runtime nodejs only).
+- `params` e `searchParams` em pages/routes/layouts são **Promises** — sempre `await`.
+- Helpers globais: `PageProps<'/route/[slug]'>`, `RouteContext<'/api/[id]'>`, `LayoutProps<'/...'>`.
+- `next lint` removido — use `eslint` direto (`yarn lint`).
+
+### Prisma 7 — diferenças vs Prisma 6
+
+- `url` **não vai mais** no `schema.prisma`, fica em `prisma.config.ts` (que precisa `import "dotenv/config"`).
+- Client precisa adapter explícito: `new PrismaClient({ adapter: new PrismaPg(...) })`.
+- `DateTime` sem anotação vira `timestamp without time zone`. Para colunas usadas em `tstzrange` (constraint EXCLUDE) é obrigatório `@db.Timestamptz(3)`.
 
 ### PWA
 
-`app/manifest.ts` está configurado, ícone em `public/icon.svg`. Service worker
-não foi adicionado ainda — `next-pwa` não tem suporte oficial pro Next 16.
-Adicionar quando precisar de offline/push reliable.
+`app/manifest.ts` configurado, ícone em `public/icon.svg`. Sem service worker
+por enquanto — `next-pwa` não tem suporte oficial pro Next 16.
 
-## Scripts úteis
+## Comandos úteis
 
 ```bash
-yarn typecheck       # tsc --noEmit
-yarn lint            # eslint
-yarn db:studio       # Prisma Studio (GUI do banco)
-yarn db:reset        # apaga + recria + roda seed
+yarn dev           # dev server
+yarn build         # gera client Prisma, aplica migrations, builda Next
+yarn typecheck     # tsc --noEmit
+yarn lint          # eslint
+
+yarn db:up         # sobe Postgres local
+yarn db:down       # derruba
+yarn db:migrate    # cria/aplica migration em dev (pede nome)
+yarn db:seed       # popula dev
+yarn db:reset      # apaga, recria, roda seed (CUIDADO: destrutivo)
+yarn db:studio     # GUI do banco
+yarn db:generate   # regera o Prisma Client
 ```
+
+## Identidade visual e padrões
+
+Documentação de design em [`DESIGN.md`](DESIGN.md). Convenções de código,
+guards e validações em [`CLAUDE.md`](CLAUDE.md) / [`AGENTS.md`](AGENTS.md).
 
 ## Roadmap (curto prazo)
 
-- [ ] UI real dos 3 passos de agendamento (consumindo `/api/availability`)
-- [ ] CRUD funcional de serviços, profissionais e horários no painel
-- [ ] Onboarding self-service em `/cadastro`
 - [ ] Integração com Evolution API (confirmação + lembrete 1h antes)
-- [ ] Página marketing detalhada (hero, pricing, FAQ)
+- [ ] Upload real de mídia (logo/cover) — provavelmente Vercel Blob
 - [ ] Testes (Vitest + Playwright)
-# reserveja
+- [ ] Página de marketing detalhada (hero, pricing, FAQ)

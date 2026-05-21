@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import { UnitSelector } from "@/components/panel/unit-selector"
 import { MobileNav } from "@/components/panel/mobile-nav"
+import { SiteFooter } from "@/components/site/site-footer"
+import { ImpersonationBanner } from "@/components/admin/impersonation-banner"
 import { signOutAction } from "@/app/(panel)/painel/_actions"
 
 const NAV: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
@@ -15,6 +17,7 @@ const NAV: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
   { href: "/painel/horarios", label: "Horários" },
   { href: "/painel/bloqueios", label: "Bloqueios" },
   { href: "/painel/clientes", label: "Clientes" },
+  { href: "/painel/historico", label: "Histórico" },
   { href: "/painel/unidades", label: "Unidades" },
   { href: "/painel/equipe", label: "Equipe", ownerOnly: true },
   { href: "/painel/configuracoes", label: "Configurações", ownerOnly: true },
@@ -35,8 +38,18 @@ export default async function PanelLayout({
     slug: e.slug,
   }))
 
+  const impersonatedBy = session.impersonatedBy
+
   return (
-    <div className="flex min-h-svh flex-col md:flex-row">
+    <div className="flex min-h-svh flex-col">
+      {impersonatedBy ? (
+        <ImpersonationBanner
+          impersonatedName={session.user.name}
+          impersonatedEmail={session.user.email}
+          adminName={impersonatedBy.name || impersonatedBy.email}
+        />
+      ) : null}
+      <div className="flex flex-1 flex-col md:flex-row">
       {/* Header mobile (só <md) */}
       <header className="md:hidden flex items-center gap-2 border-b bg-background sticky top-0 z-30 px-3 h-14">
         <MobileNav
@@ -104,7 +117,11 @@ export default async function PanelLayout({
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">{children}</main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </div>
+      </div>
     </div>
   )
 }

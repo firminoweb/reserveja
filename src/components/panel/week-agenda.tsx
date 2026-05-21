@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { fromZonedTime } from "date-fns-tz"
-import { Check, ChevronLeft, ChevronRight, Lock, UserX, XCircle } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Lock, RotateCcw, UserX, XCircle } from "lucide-react"
 import type { BookingStatus } from "@prisma/client"
 
 import { Badge } from "@/components/ui/badge"
@@ -68,6 +68,8 @@ export type AgendaBooking = {
   localEndMin: number
   startLabel: string
   endLabel: string
+  /** endsAt > now no momento do server render — true = ainda dá pra reabrir. */
+  reopenable: boolean
   clientName: string
   clientPhone: string
   serviceName: string
@@ -165,11 +167,14 @@ export function WeekAgenda({
 
   function changeStatus(next: BookingStatus, label: string) {
     if (!selected) return
+    const current = selected
     startTransition(async () => {
-      const res = await setBookingStatusAction(selected.id, next)
+      const res = await setBookingStatusAction(current.id, next)
       if (res.ok) {
         toast.success(`Marcado como ${label}`)
-        setSelected(null)
+        // Mantém modal aberto com status atualizado — permite "Cancelar → Reabrir"
+        // sem fechar e procurar de novo. Usuário fecha pelo X.
+        setSelected({ ...current, status: next })
         router.refresh()
       } else {
         toast.error(res.message)
@@ -318,7 +323,17 @@ export function WeekAgenda({
 
   const totalBookings = days.reduce((acc, d) => acc + d.bookings.length, 0)
   const canActOnSelected =
-    selected && selected.status !== "COMPLETED" && selected.status !== "CANCELLED"
+    !!selected &&
+    (selected.status === "PENDING" || selected.status === "CONFIRMED")
+  // Reabrir vale pra CANCELLED, NO_SHOW e COMPLETED — desde que o atendimento
+  // ainda não tenha terminado (server marca `reopenable` por booking).
+  // Server reconfere em updateBookingStatus (retorna TOO_LATE se expirou).
+  const canReopenSelected =
+    !!selected &&
+    selected.reopenable &&
+    (selected.status === "CANCELLED" ||
+      selected.status === "NO_SHOW" ||
+      selected.status === "COMPLETED")
   const showProfessionalFilter = professionals.length >= 2
   const mobileDay = days[mobileDayIdx] ?? days[0]
   const mobileTimeline = useMemo(() => {
@@ -752,45 +767,47 @@ export function WeekAgenda({
                   </div>
                 ) : null}
               </div>
-              <DialogFooter className="!justify-between sm:!justify-between">
-                <Button
-                  variant="outline"
-                  onClick={() => setSelected(null)}
-                  disabled={pending}
-                >
-                  Fechar
-                </Button>
-                {canActOnSelected ? (
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => changeStatus("NO_SHOW", "não compareceu")}
-                      disabled={pending}
-                    >
-                      <UserX className="size-4" />
-                      Não veio
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => changeStatus("CANCELLED", "cancelado")}
-                      disabled={pending}
-                    >
-                      <XCircle className="size-4" />
-                      Cancelar
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => changeStatus("COMPLETED", "concluído")}
-                      disabled={pending}
-                    >
-                      <Check className="size-4" />
-                      Concluir
-                    </Button>
-                  </div>
-                ) : null}
-              </DialogFooter>
+              {canActOnSelected ? (
+                <DialogFooter className="grid grid-cols-3 gap-2 sm:flex sm:justify-end sm:gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeStatus("NO_SHOW", "não compareceu")}
+                    disabled={pending}
+                  >
+                    <UserX className="size-4" />
+                    Não veio
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => changeStatus("CANCELLED", "cancelado")}
+                    disabled={pending}
+                  >
+                    <XCircle className="size-4" />
+                    Cancelar
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => changeStatus("COMPLETED", "concluído")}
+                    disabled={pending}
+                  >
+                    <Check className="size-4" />
+                    Concluir
+                  </Button>
+                </DialogFooter>
+              ) : canReopenSelected ? (
+                <DialogFooter className="sm:justify-end">
+                  <Button
+                    onClick={() => changeStatus("CONFIRMED", "reaberto")}
+                    disabled={pending}
+                    className="w-full sm:w-auto"
+                  >
+                    <RotateCcw className="size-4" />
+                    Reabrir agendamento
+                  </Button>
+                </DialogFooter>
+              ) : null}
             </>
           ) : null}
         </DialogContent>

@@ -48,6 +48,8 @@ export default async function PanelAgendaPage({
 
   const { startUtc, endUtc, startLocal } = getWeekRange(anchor, tz)
   const days = weekDaysLocal(startLocal)
+  const now = new Date()
+  const nowMs = now.getTime()
 
   const professionals = await db.professional.findMany({
     where: { establishmentId: establishment.id, active: true },
@@ -65,7 +67,13 @@ export default async function PanelAgendaPage({
       where: {
         establishmentId: establishment.id,
         startsAt: { gte: startUtc, lt: endUtc },
-        status: { not: "CANCELLED" },
+        // Esconde cancelados que já terminaram (nada a fazer com eles).
+        // Cancelados que ainda dão pra reabrir continuam visíveis (muted)
+        // pro owner poder restaurar via modal.
+        OR: [
+          { status: { not: "CANCELLED" } },
+          { status: "CANCELLED", endsAt: { gt: now } },
+        ],
         ...(professionalFilter ? { professionalId: professionalFilter } : {}),
       },
       select: {
@@ -111,7 +119,7 @@ export default async function PanelAgendaPage({
   const startHour = Math.floor(startMin / 60)
   const endHour = Math.ceil(endMin / 60)
 
-  const todayLocal = toZonedTime(new Date(), tz)
+  const todayLocal = toZonedTime(now, tz)
   const todayKey = format(todayLocal, "yyyy-MM-dd")
 
   // Agrupa bookings por dia local
@@ -135,6 +143,7 @@ export default async function PanelAgendaPage({
       localEndMin: localMinutes(b.endsAt, tz),
       startLabel: formatLocal(b.startsAt, tz, "HH:mm"),
       endLabel: formatLocal(b.endsAt, tz, "HH:mm"),
+      reopenable: b.endsAt.getTime() > nowMs,
       clientName: b.clientName,
       clientPhone: b.clientPhone,
       serviceName: b.service.name,

@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto"
+import { generateTempPassword } from "@/lib/temp-password"
 import bcrypt from "bcryptjs"
 
 import { db } from "@/lib/db"
@@ -21,17 +21,6 @@ export class TeamError extends Error {
   ) {
     super(message)
   }
-}
-
-const SAFE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789"
-
-function generateTempPassword(length = 12): string {
-  const bytes = randomBytes(length)
-  let out = ""
-  for (let i = 0; i < length; i++) {
-    out += SAFE_ALPHABET[bytes[i] % SAFE_ALPHABET.length]
-  }
-  return out
 }
 
 async function assertUnitsBelongToOrg(orgId: string, unitIds: string[]) {

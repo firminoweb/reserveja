@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"]
 
 export const metadata: Metadata = {
   title: {
-    default: "Reserve Já — agendamentos sem complicação",
+    default: "Reserve Já - agendamentos e reservas sem complicação",
     template: "%s · Reserve Já",
   },
   description:

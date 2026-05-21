@@ -3,8 +3,8 @@ import { redirect } from "next/navigation"
 import { NextResponse } from "next/server"
 import type { Role } from "@prisma/client"
 
-import { auth } from "@/lib/auth"
 import { db } from "@/lib/db"
+import { getEffectiveSession } from "@/server/auth/impersonate"
 
 export const UNIT_COOKIE = "rj_unit"
 
@@ -19,9 +19,13 @@ export async function requireOwnerRole() {
   return ctx
 }
 
+/**
+ * Retorna sessão "efetiva" — se admin estiver impersonando, retorna o usuário
+ * alvo (mais campo `impersonatedBy` populado pro banner).
+ */
 export async function requireSession() {
-  const session = await auth()
-  if (!session?.user) redirect("/login")
+  const session = await getEffectiveSession()
+  if (!session) redirect("/login")
   return session
 }
 
@@ -31,15 +35,12 @@ export async function requireRole(role: Role) {
   return session
 }
 
-/**
- * Para rotas do painel: sessão + organização + lista de unidades a que esse
- * usuário tem acesso + a unidade "atualmente selecionada" (cookie rj_unit).
- *
- * Sem linhas em MembershipUnit pra essa membership → acesso total (caso
- * default do OWNER). Com linhas → restrito às listadas.
- */
 export async function requireOwnerMembership() {
   const session = await requireSession()
+
+  // ADMIN não tem Membership e não deve cair no fluxo de cadastro de empresa.
+  // Mandar pra /admin (área dele) — evita loop /painel → /cadastro → /painel.
+  if (session.user.role === "ADMIN") redirect("/admin")
 
   const membership = await db.membership.findFirst({
     where: { userId: session.user.id },
@@ -82,8 +83,8 @@ export async function requireOwnerMembership() {
  * Mesma lógica de cookie + per-unit ACL.
  */
 export async function getApiOwnerContext() {
-  const session = await auth()
-  if (!session?.user) {
+  const session = await getEffectiveSession()
+  if (!session) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 })
   }
   const membership = await db.membership.findFirst({

@@ -1,4 +1,5 @@
 import { addMinutes, format, parse, startOfDay } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import { fromZonedTime, toZonedTime, formatInTimeZone } from "date-fns-tz"
 
 /**
@@ -12,9 +13,9 @@ export function minutesToUtc(localDay: Date, minutes: number, timezone: string):
   return fromZonedTime(local, timezone)
 }
 
-/** Formata um instante UTC no fuso do estabelecimento. */
+/** Formata um instante UTC no fuso do estabelecimento (pt-BR por padrão). */
 export function formatLocal(date: Date, timezone: string, pattern = "HH:mm"): string {
-  return formatInTimeZone(date, timezone, pattern)
+  return formatInTimeZone(date, timezone, pattern, { locale: ptBR })
 }
 
 /** Dia da semana (0=domingo) no fuso do estabelecimento. */

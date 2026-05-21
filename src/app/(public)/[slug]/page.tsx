@@ -124,7 +124,7 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
                 size="sm"
                 className="w-full sm:w-auto"
               >
-                <Link href={`/${slug}/agendar?serviceId=${s.id}`}>
+                <Link href={`/${slug}/agendar/profissional?serviceId=${s.id}`}>
                   Agendar este serviço
                 </Link>
               </Button>
@@ -132,6 +132,7 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
           </Card>
         ))}
       </div>
+
     </main>
   )
 }

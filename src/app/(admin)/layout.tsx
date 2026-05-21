@@ -3,6 +3,8 @@ import Link from "next/link"
 import { requireRole } from "@/server/auth/guards"
 import { signOut } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
+import { AdminMobileNav } from "@/components/admin/mobile-nav"
+import { SiteFooter } from "@/components/site/site-footer"
 
 const NAV = [
   { href: "/admin", label: "Visão geral" },
@@ -19,7 +21,20 @@ export default async function AdminLayout({
   const session = await requireRole("ADMIN")
 
   return (
-    <div className="flex min-h-svh">
+    <div className="flex min-h-svh flex-col md:flex-row">
+      {/* Header mobile (só <md) */}
+      <header className="md:hidden flex items-center gap-2 border-b border-slate-800 bg-slate-950 text-slate-100 sticky top-0 z-30 px-3 h-14">
+        <AdminMobileNav
+          navItems={NAV}
+          userEmail={session.user.email ?? ""}
+        />
+        <Link href="/admin" aria-label="Admin — início" className="shrink-0 font-bold">
+          Reserve Já
+        </Link>
+        <span className="ml-auto text-xs text-slate-400">Admin</span>
+      </header>
+
+      {/* Sidebar desktop (≥md) */}
       <aside className="hidden md:flex w-60 flex-col border-r bg-slate-950 text-slate-100">
         <div className="px-5 py-5 border-b border-slate-800">
           <Link href="/admin" className="text-lg font-bold">Reserve Já</Link>
@@ -51,7 +66,10 @@ export default async function AdminLayout({
         </div>
       </aside>
 
-      <main className="flex-1 min-w-0">{children}</main>
+      <div className="flex-1 min-w-0 flex flex-col">
+        <main className="flex-1">{children}</main>
+        <SiteFooter />
+      </div>
     </div>
   )
 }

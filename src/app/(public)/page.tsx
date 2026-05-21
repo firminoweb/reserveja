@@ -1,8 +1,10 @@
 import Link from "next/link"
 import { CalendarCheck, MessageCircle, Sparkles } from "lucide-react"
 
+import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
 import { Logo, LogoMark } from "@/components/ui/logo"
+import { UserMenu } from "@/components/site/user-menu"
 
 const FEATURES = [
   {
@@ -22,7 +24,10 @@ const FEATURES = [
   },
 ]
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await auth()
+  const user = session?.user
+
   return (
     <main className="flex-1">
       <header className="border-b bg-background/80 backdrop-blur sticky top-0 z-30">
@@ -40,12 +45,22 @@ export default function HomePage() {
             >
               Preços
             </Link>
-            <Button asChild variant="ghost" size="sm" className="md:h-10">
-              <Link href="/login">Entrar</Link>
-            </Button>
-            <Button asChild size="sm" className="md:h-10">
-              <Link href="/cadastro">Começar grátis</Link>
-            </Button>
+            {user ? (
+              <UserMenu
+                name={user.name ?? null}
+                email={user.email ?? ""}
+                role={user.role}
+              />
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm" className="md:h-10">
+                  <Link href="/login">Entrar</Link>
+                </Button>
+                <Button asChild size="sm" className="md:h-10">
+                  <Link href="/cadastro">Começar grátis</Link>
+                </Button>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -71,7 +86,7 @@ export default function HomePage() {
             Reservas simples. Mais tempo pro que importa.
           </span>
           <h1 className="mt-5 text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight leading-tight">
-            Agendamentos sem complicação{" "}
+            Agendamentos e reservas sem complicação{" "}
             <span className="text-primary">pro seu negócio</span>.
           </h1>
           <p className="mt-4 md:mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">

@@ -7,7 +7,9 @@ import { RegisterForm } from "./register-form"
 
 export default async function CadastroPage() {
   const session = await auth()
-  if (session?.user) redirect("/painel")
+  if (session?.user) {
+    redirect(session.user.role === "ADMIN" ? "/admin" : "/painel")
+  }
 
   return (
     <main className="min-h-svh flex items-center justify-center px-6 py-12">

@@ -3,11 +3,14 @@
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
-import { addDays, format } from "date-fns"
+import { addDays, format, parseISO } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toZonedTime } from "date-fns-tz"
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatLocal } from "@/lib/time"
@@ -31,14 +34,25 @@ type Props = {
   professionals: Professional[]
 }
 
-const DAYS_AHEAD = 14
+const DAYS_AHEAD = 30
+const VISIBLE = 7
 
-function buildDays(timezone: string) {
+type Day = {
+  iso: string
+  date: Date
+  weekday: string
+  day: string
+  isToday: boolean
+  isTomorrow: boolean
+}
+
+function buildDays(timezone: string): Day[] {
   const todayLocal = toZonedTime(new Date(), timezone)
   return Array.from({ length: DAYS_AHEAD }, (_, i) => {
     const d = addDays(todayLocal, i)
     return {
       iso: format(d, "yyyy-MM-dd"),
+      date: d,
       weekday: format(d, "EEE", { locale: ptBR }).replace(".", ""),
       day: format(d, "dd"),
       isToday: i === 0,
@@ -47,10 +61,38 @@ function buildDays(timezone: string) {
   })
 }
 
+function rangeLabel(days: Day[], start: number) {
+  const first = days[start]
+  const last = days[Math.min(start + VISIBLE - 1, days.length - 1)]
+  if (!first || !last) return ""
+  const sameMonth = format(first.date, "MMM", { locale: ptBR }) === format(last.date, "MMM", { locale: ptBR })
+  const firstLabel = format(first.date, sameMonth ? "dd" : "dd MMM", { locale: ptBR })
+  const lastLabel = format(last.date, "dd MMM", { locale: ptBR })
+  return `${firstLabel} – ${lastLabel}`.replace(/\./g, "")
+}
+
 export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) {
   const router = useRouter()
   const days = useMemo(() => buildDays(timezone), [timezone])
   const [selectedDate, setSelectedDate] = useState(days[0].iso)
+  const [weekStart, setWeekStart] = useState(0)
+  const [calendarOpen, setCalendarOpen] = useState(false)
+
+  const visibleDays = days.slice(weekStart, weekStart + VISIBLE)
+  const canPrev = weekStart > 0
+  const canNext = weekStart + VISIBLE < days.length
+  const minDate = days[0].date
+  const maxDate = days[days.length - 1].date
+
+  function pickDate(iso: string) {
+    setSelectedDate(iso)
+    const idx = days.findIndex((d) => d.iso === iso)
+    if (idx === -1) return
+    if (idx < weekStart || idx >= weekStart + VISIBLE) {
+      const clamped = Math.max(0, Math.min(idx, days.length - VISIBLE))
+      setWeekStart(clamped)
+    }
+  }
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ["availability", slug, serviceId, selectedDate],
@@ -86,33 +128,92 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
 
   return (
     <div className="mt-6 space-y-6">
-      <div className="-mx-4 sm:-mx-1 flex gap-2 overflow-x-auto px-4 sm:px-1 pb-2 scrollbar-thin snap-x">
-        {days.map((d) => {
-          const selected = d.iso === selectedDate
-          return (
-            <button
-              key={d.iso}
-              type="button"
-              onClick={() => setSelectedDate(d.iso)}
-              className={cn(
-                "shrink-0 snap-start w-16 rounded-xl border py-3 text-center text-sm transition-all",
-                selected
-                  ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
-                  : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
-              )}
-            >
-              <div
+      <div>
+        <div className="flex items-center gap-2">
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() => setWeekStart((v) => Math.max(0, v - VISIBLE))}
+            disabled={!canPrev}
+            aria-label="Semana anterior"
+            className="shrink-0"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+
+          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="flex-1 justify-center gap-2 font-medium"
+              >
+                <CalendarIcon className="size-4" />
+                <span className="truncate">{rangeLabel(days, weekStart)}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="center">
+              <Calendar
+                mode="single"
+                locale={ptBR}
+                selected={parseISO(selectedDate)}
+                onSelect={(d) => {
+                  if (!d) return
+                  pickDate(format(d, "yyyy-MM-dd"))
+                  setCalendarOpen(false)
+                }}
+                disabled={{ before: minDate, after: maxDate }}
+                defaultMonth={parseISO(selectedDate)}
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button
+            type="button"
+            size="icon"
+            variant="outline"
+            onClick={() =>
+              setWeekStart((v) => Math.min(days.length - VISIBLE, v + VISIBLE))
+            }
+            disabled={!canNext}
+            aria-label="Próxima semana"
+            className="shrink-0"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </div>
+
+        <div className="mt-3 grid grid-cols-7 gap-1.5">
+          {visibleDays.map((d) => {
+            const selected = d.iso === selectedDate
+            return (
+              <button
+                key={d.iso}
+                type="button"
+                onClick={() => pickDate(d.iso)}
                 className={cn(
-                  "text-[10px] uppercase tracking-wide font-medium",
-                  selected ? "opacity-90" : "text-muted-foreground",
+                  "min-w-0 rounded-xl border py-2.5 text-center transition-all",
+                  selected
+                    ? "border-primary bg-primary text-primary-foreground shadow-md shadow-primary/20"
+                    : "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
                 )}
               >
-                {d.isToday ? "Hoje" : d.isTomorrow ? "Amanhã" : d.weekday}
-              </div>
-              <div className="mt-0.5 text-lg font-bold">{d.day}</div>
-            </button>
-          )
-        })}
+                <div
+                  className={cn(
+                    "text-[10px] uppercase tracking-wide font-medium truncate px-0.5",
+                    selected ? "opacity-90" : "text-muted-foreground",
+                  )}
+                >
+                  {d.isToday ? "Hoje" : d.isTomorrow ? "Amanhã" : d.weekday}
+                </div>
+                <div className="mt-0.5 text-base sm:text-lg font-bold">
+                  {d.day}
+                </div>
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {isLoading ? (

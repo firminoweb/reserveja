@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { signIn } from "next-auth/react"
+import { getSession, signIn } from "next-auth/react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
@@ -22,7 +22,7 @@ import {
 export function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
-  const from = params.get("from") ?? "/painel"
+  const from = params.get("from")
 
   const form = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
@@ -35,7 +35,12 @@ export function LoginForm() {
       toast.error("E-mail ou senha incorretos")
       return
     }
-    router.push(from)
+    let dest = from
+    if (!dest) {
+      const session = await getSession()
+      dest = session?.user?.role === "ADMIN" ? "/admin" : "/painel"
+    }
+    router.push(dest)
     router.refresh()
   }
 
