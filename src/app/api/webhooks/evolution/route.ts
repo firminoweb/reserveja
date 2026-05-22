@@ -14,7 +14,7 @@ function safeEqual(a: string, b: string): boolean {
 // Aceita o segredo via header (preferido) ou query — algumas versões da Evolution
 // só suportam ?token=... na URL configurada. Configure `EVOLUTION_WEBHOOK_SECRET`
 // na Vercel e use a mesma string na URL do webhook na Evolution:
-//   https://reserveja.vercel.app/api/webhooks/evolution?token=<secret>
+//   https://reserveja.app/api/webhooks/evolution?token=<secret>
 //
 // Se o segredo não estiver configurado em produção, recusamos por segurança.
 export async function POST(req: NextRequest) {

@@ -6,6 +6,13 @@ import { Resend } from "resend"
 const apiKey = process.env.RESEND_API_KEY
 const fromEmail = process.env.RESEND_FROM_EMAIL ?? "Reserve Já <onboarding@resend.dev>"
 
+// Extrai só o endereço de "Nome <email@dom>" ou retorna o input se já for puro.
+// Usado em headers/campos que exigem só o endereço (ex.: ORGANIZER do .ics).
+export function getFromAddress(): string {
+  const match = fromEmail.match(/<([^>]+)>/)
+  return match ? match[1] : fromEmail.trim()
+}
+
 let client: Resend | null = null
 function getClient(): Resend | null {
   if (!apiKey) return null

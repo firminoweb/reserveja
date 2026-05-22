@@ -1,6 +1,6 @@
 import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
-import { sendEmail } from "@/lib/email"
+import { getFromAddress, sendEmail } from "@/lib/email"
 import { buildIcs } from "@/lib/ics"
 import { sendPushForBooking } from "@/lib/push"
 import { formatLocal } from "@/lib/time"
@@ -83,7 +83,7 @@ export async function sendBookingConfirmation(bookingId: string): Promise<void> 
         ].join("\n"),
         location: addressLine || undefined,
         url: link,
-        organizerEmail: process.env.RESEND_FROM_ADDRESS,
+        organizerEmail: getFromAddress(),
         organizerName: booking.establishment.name,
         attendeeEmail: booking.clientEmail,
         attendeeName: booking.clientName,
@@ -162,7 +162,7 @@ export async function sendBookingCancellation(bookingId: string): Promise<void> 
       description: `Agendamento cancelado.`,
       location: addressLine || undefined,
       url: link,
-      organizerEmail: process.env.RESEND_FROM_ADDRESS,
+      organizerEmail: getFromAddress(),
       organizerName: booking.establishment.name,
       attendeeEmail: booking.clientEmail,
       attendeeName: booking.clientName,
