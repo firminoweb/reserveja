@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
+import { PushOptIn } from "@/components/booking/push-opt-in"
 import { formatLocal } from "@/lib/time"
 
 export default async function AgendarSucesso(
@@ -59,6 +60,11 @@ export default async function AgendarSucesso(
         <Button asChild className="w-full" size="lg">
           <Link href={`/${slug}/b/${booking.publicToken}`}>Ver meu agendamento</Link>
         </Button>
+        <Button asChild variant="outline" className="w-full md:hidden" size="lg">
+          <a href={`/api/bookings/${booking.publicToken}/ics`} download>
+            Adicionar ao calendário
+          </a>
+        </Button>
         {waNumber ? (
           <Button asChild variant="outline" className="w-full" size="lg">
             <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer">
@@ -66,6 +72,7 @@ export default async function AgendarSucesso(
             </a>
           </Button>
         ) : null}
+        <PushOptIn bookingToken={booking.publicToken} />
       </div>
 
       <p className="mt-8 text-xs text-muted-foreground">

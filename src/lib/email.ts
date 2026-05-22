@@ -13,21 +13,49 @@ function getClient(): Resend | null {
   return client
 }
 
+export type EmailAttachment = {
+  filename: string
+  content: string | Buffer
+  contentType?: string
+}
+
 type SendArgs = {
   to: string
   subject: string
   html: string
   text: string
+  attachments?: EmailAttachment[]
 }
 
-export async function sendEmail({ to, subject, html, text }: SendArgs): Promise<{ ok: boolean }> {
+export async function sendEmail({
+  to,
+  subject,
+  html,
+  text,
+  attachments,
+}: SendArgs): Promise<{ ok: boolean }> {
   const c = getClient()
   if (!c) {
     console.warn("[email] RESEND_API_KEY não configurado — email ignorado", { to, subject })
     return { ok: false }
   }
 
-  const { error } = await c.emails.send({ from: fromEmail, to, subject, html, text })
+  const { error } = await c.emails.send({
+    from: fromEmail,
+    to,
+    subject,
+    html,
+    text,
+    attachments: attachments?.map((a) => ({
+      filename: a.filename,
+      // Resend aceita Buffer ou string base64. Padronizamos em base64 string.
+      content:
+        typeof a.content === "string"
+          ? Buffer.from(a.content, "utf-8").toString("base64")
+          : a.content.toString("base64"),
+      contentType: a.contentType,
+    })),
+  })
   if (error) {
     console.error("[email] Resend falhou", error)
     return { ok: false }

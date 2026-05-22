@@ -11,6 +11,14 @@ export const createBookingSchema = z.object({
   clientPhone: z
     .string()
     .refine((v) => isValidBR(v), "WhatsApp inválido"),
+  clientEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Email inválido")
+    .max(254)
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
   notes: z.string().trim().max(500).optional(),
 })
 

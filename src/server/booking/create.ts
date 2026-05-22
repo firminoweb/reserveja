@@ -62,6 +62,7 @@ export async function createBooking(input: CreateBookingInput) {
         serviceId: input.serviceId,
         clientName: input.clientName,
         clientPhone: input.clientPhone,
+        clientEmail: input.clientEmail,
         startsAt,
         endsAt,
         notes: input.notes,

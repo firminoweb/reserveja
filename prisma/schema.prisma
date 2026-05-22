@@ -278,6 +278,7 @@ model Booking {
   service         Service       @relation(fields: [serviceId], references: [id])
   clientName      String
   clientPhone     String        // E.164: +5511999999999
+  clientEmail     String?       // opcional — receber confirmação + .ics no email
   startsAt        DateTime      @db.Timestamptz(3)
   endsAt          DateTime      @db.Timestamptz(3)
   status          BookingStatus @default(CONFIRMED)
@@ -293,6 +294,22 @@ model Booking {
   @@index([clientPhone])
   // Cron de lembretes filtra por (startsAt, reminderSentAt IS NULL)
   @@index([startsAt, reminderSentAt])
+  pushSubscriptions PushSubscription[]
+}
+
+// Push subscription do navegador do cliente. Atrelada ao booking — quando o
+// booking é deletado, as subscriptions vão junto. Subscription com endpoint
+// 404/410 no envio é limpa pelo dispatcher.
+model PushSubscription {
+  id        String   @id @default(cuid())
+  bookingId String
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([bookingId])
 }
 
 // Bloqueios: feriado, almoço, folga. Pode ser do estabelecimento inteiro

@@ -39,6 +39,7 @@ export function BookingForm({ slug, serviceId, professionalId, startsAt }: Props
       startsAt,
       clientName: "",
       clientPhone: "",
+      clientEmail: "",
       notes: "",
     },
   })
@@ -96,6 +97,30 @@ export function BookingForm({ slug, serviceId, professionalId, startsAt }: Props
                   onChange={(e) => field.onChange(maskBR(e.target.value))}
                 />
               </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="clientEmail"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>
+                Email <span className="text-muted-foreground font-normal">(opcional)</span>
+              </FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  {...field}
+                />
+              </FormControl>
+              <p className="text-xs text-muted-foreground">
+                Recebe convite no calendário com lembrete automático.
+              </p>
               <FormMessage />
             </FormItem>
           )}
