@@ -85,7 +85,7 @@ prisma/
 - **Unidade atual no painel**: cookie `rj_unit` (constante `UNIT_COOKIE` em guards). `requireOwnerMembership()` retorna `{ organization, establishment, establishments, role }` — `establishment` é a selecionada (ou primeira allowed). Trocar via `setSelectedUnitAction(unitId)`. Página `/painel/unidades` lista + cria nova (respeita `planLimitUnits`).
 - **Slug não é editável** após cadastro (link público quebraria). Edição precisaria redirect slug-antigo→novo — fora do MVP.
 - **Upload de mídia**: só URL pública por enquanto (cliente cola Cloudinary/Imgur/S3). Real upload exige decisão de storage (Vercel Blob é o caminho natural).
-- **Cron de lembretes**: endpoint `/api/cron/booking-reminders` protegido por `CRON_SECRET` (Bearer). `vercel.json` agenda `*/5 * * * *`. Idempotência via `Booking.reminderSentAt`.
+- **Cron de lembretes**: endpoint `/api/cron/booking-reminders` protegido por `CRON_SECRET` (Bearer header ou `?key=` query). Agendador externo: **cron-job.org** chama a cada 5min (não usamos Vercel Cron — Hobby não suporta sub-diário). Idempotência via `Booking.reminderSentAt`.
 
 ## Comandos
 

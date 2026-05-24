@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useQuery } from "@tanstack/react-query"
 import { addDays, format, parseISO } from "date-fns"
@@ -85,6 +85,7 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
   const [selectedDate, setSelectedDate] = useState(days[0].iso)
   const [weekStart, setWeekStart] = useState(0)
   const [calendarOpen, setCalendarOpen] = useState(false)
+  const [hasManualSelection, setHasManualSelection] = useState(false)
 
   const hasMultiple = professionals.length > 1
   const [selectedProId, setSelectedProId] = useState<string>(
@@ -99,6 +100,7 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
 
   function pickDate(iso: string) {
     setSelectedDate(iso)
+    setHasManualSelection(true)
     const idx = days.findIndex((d) => d.iso === iso)
     if (idx === -1) return
     if (idx < weekStart || idx >= weekStart + VISIBLE) {
@@ -119,6 +121,20 @@ export function SlotPicker({ slug, serviceId, timezone, professionals }: Props) 
       return (await res.json()) as { slots: Slot[] }
     },
   })
+
+  useEffect(() => {
+    if (hasManualSelection || !data || data.slots.length > 0) return
+    const idx = days.findIndex((d) => d.iso === selectedDate)
+    if (idx === -1 || idx >= days.length - 1) return
+    const nextIdx = idx + 1
+    const t = setTimeout(() => {
+      setSelectedDate(days[nextIdx].iso)
+      if (nextIdx >= weekStart + VISIBLE) {
+        setWeekStart(Math.min(days.length - VISIBLE, nextIdx))
+      }
+    }, 0)
+    return () => clearTimeout(t)
+  }, [data, hasManualSelection, days, selectedDate, weekStart])
 
   const professionalById = useMemo(() => {
     const m = new Map<string, Professional>()

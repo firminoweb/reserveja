@@ -4,7 +4,7 @@ import { formatInTimeZone } from "date-fns-tz"
 // Mantemos UID estável (booking.publicToken) — METHOD:CANCEL com mesmo UID +
 // SEQUENCE > 0 remove o evento do calendário do cliente automaticamente.
 
-export type IcsMethod = "REQUEST" | "CANCEL"
+export type IcsMethod = "PUBLISH" | "REQUEST" | "CANCEL"
 
 export type IcsInput = {
   uid: string
@@ -82,9 +82,11 @@ export function buildIcs(input: IcsInput): string {
     const cn = input.organizerName ? `;CN=${esc(input.organizerName)}` : ""
     lines.push(`ORGANIZER${cn}:mailto:${input.organizerEmail}`)
   }
-  lines.push(
-    `ATTENDEE;CN=${esc(input.attendeeName)};RSVP=FALSE:mailto:${input.attendeeEmail}`,
-  )
+  if (method !== "PUBLISH") {
+    lines.push(
+      `ATTENDEE;CN=${esc(input.attendeeName)};RSVP=FALSE:mailto:${input.attendeeEmail}`,
+    )
+  }
   lines.push(method === "CANCEL" ? "STATUS:CANCELLED" : "STATUS:CONFIRMED")
   lines.push("TRANSP:OPAQUE")
 

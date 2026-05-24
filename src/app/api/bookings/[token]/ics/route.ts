@@ -39,10 +39,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   const addressLine = formatAddressOneLine(booking.establishment)
   const isCancelled = booking.status === "CANCELLED"
 
+  const method = isCancelled ? "CANCEL" : "PUBLISH"
   const ics = buildIcs({
     uid: booking.publicToken,
     sequence: isCancelled ? 1 : 0,
-    method: isCancelled ? "CANCEL" : "REQUEST",
+    method,
     startsAt: booking.startsAt,
     endsAt: booking.endsAt,
     timezone: booking.establishment.timezone,
@@ -58,7 +59,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ token: str
   return new NextResponse(ics, {
     status: 200,
     headers: {
-      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Type": `text/calendar; method=${method}; charset=utf-8`,
       "Content-Disposition": `attachment; filename="agendamento-${booking.publicToken.slice(0, 8)}.ics"`,
       "Cache-Control": "no-store",
     },

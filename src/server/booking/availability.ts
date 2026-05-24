@@ -9,6 +9,7 @@ import {
 } from "@/lib/time"
 
 const SLOT_GRANULARITY_MIN = 15
+const MIN_ADVANCE_MIN = 15
 
 type GetAvailabilityArgs = {
   establishmentSlug: string
@@ -92,6 +93,7 @@ export async function getAvailability(args: GetAvailabilityArgs): Promise<Slot[]
   ])
 
   const slots: Slot[] = []
+  const earliestStart = addMinutes(new Date(), MIN_ADVANCE_MIN)
 
   for (const pro of professionals) {
     const schedules = pro.schedules.filter((s) => s.weekday === weekday)
@@ -107,6 +109,11 @@ export async function getAvailability(args: GetAvailabilityArgs): Promise<Slot[]
       while (addMinutes(cursor, service.durationMin) <= windowEndUtc) {
         const slotStart = cursor
         const slotEnd = addMinutes(cursor, service.durationMin)
+
+        if (slotStart < earliestStart) {
+          cursor = addMinutes(cursor, SLOT_GRANULARITY_MIN)
+          continue
+        }
 
         const conflictsBooking = bookings.some(
           (b) =>

@@ -4,7 +4,14 @@ import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { PushOptIn } from "@/components/booking/push-opt-in"
+import { CopyLinkButton } from "@/components/booking/copy-link-button"
+import { AddToCalendarMenu } from "@/components/booking/add-to-calendar-menu"
 import { formatLocal } from "@/lib/time"
+import { formatAddressOneLine } from "@/lib/address"
+
+function appUrl() {
+  return process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ?? "http://localhost:3000"
+}
 
 export default async function AgendarSucesso(
   props: PageProps<"/[slug]/agendar/sucesso/[bookingId]">,
@@ -16,7 +23,18 @@ export default async function AgendarSucesso(
     include: {
       service: { select: { name: true } },
       professional: { select: { name: true } },
-      establishment: { select: { name: true, timezone: true, whatsapp: true } },
+      establishment: {
+        select: {
+          name: true,
+          timezone: true,
+          whatsapp: true,
+          street: true,
+          streetNumber: true,
+          neighborhood: true,
+          city: true,
+          state: true,
+        },
+      },
     },
   })
 
@@ -24,6 +42,17 @@ export default async function AgendarSucesso(
 
   const tz = booking.establishment.timezone
   const waNumber = booking.establishment.whatsapp.replace(/\D/g, "")
+  const bookingUrl = `${appUrl()}/${slug}/b/${booking.publicToken}`
+  const icsUrl = `/api/bookings/${booking.publicToken}/ics`
+  const addressLine = formatAddressOneLine(booking.establishment)
+
+  const calendarEvent = {
+    title: `${booking.service.name} — ${booking.establishment.name}`,
+    description: `Agendamento com ${booking.professional.name}.\n\nGerencie ou cancele: ${bookingUrl}`,
+    location: addressLine || undefined,
+    startsAt: booking.startsAt,
+    endsAt: booking.endsAt,
+  }
 
   return (
     <main className="mx-auto max-w-xl px-4 md:px-6 py-8 md:py-12 text-center">
@@ -56,15 +85,21 @@ export default async function AgendarSucesso(
         </div>
       </div>
 
+      <div className="mt-6 text-left space-y-2">
+        <label className="text-xs font-medium text-muted-foreground">
+          Link do seu agendamento
+        </label>
+        <CopyLinkButton url={bookingUrl} />
+        <p className="text-xs text-muted-foreground">
+          Guarde este link — você pode cancelar ou consultar por aqui a qualquer momento.
+        </p>
+      </div>
+
       <div className="mt-6 space-y-3">
         <Button asChild className="w-full" size="lg">
           <Link href={`/${slug}/b/${booking.publicToken}`}>Ver meu agendamento</Link>
         </Button>
-        <Button asChild variant="outline" className="w-full md:hidden" size="lg">
-          <a href={`/api/bookings/${booking.publicToken}/ics`} download>
-            Adicionar ao calendário
-          </a>
-        </Button>
+        <AddToCalendarMenu event={calendarEvent} icsUrl={icsUrl} />
         {waNumber ? (
           <Button asChild variant="outline" className="w-full" size="lg">
             <a href={`https://wa.me/${waNumber}`} target="_blank" rel="noreferrer">
@@ -74,10 +109,6 @@ export default async function AgendarSucesso(
         ) : null}
         <PushOptIn bookingToken={booking.publicToken} />
       </div>
-
-      <p className="mt-8 text-xs text-muted-foreground">
-        Guarde o link acima — você pode cancelar por lá se precisar.
-      </p>
     </main>
   )
 }
