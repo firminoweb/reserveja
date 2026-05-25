@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next"
 import { Geist_Mono, Poppins } from "next/font/google"
 
+import { GoogleAnalytics } from "@next/third-parties/google"
+
 import { Toaster } from "@/components/ui/sonner"
 import { Providers } from "@/app/providers"
 import { cn } from "@/lib/utils"
@@ -74,6 +76,7 @@ export default function RootLayout({
       >
         <Providers>{children}</Providers>
         <Toaster richColors position="top-right" />
+        <GoogleAnalytics gaId="G-W14M6VS292" />
       </body>
     </html>
   )
