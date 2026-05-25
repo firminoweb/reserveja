@@ -1,16 +1,24 @@
 import { NextResponse, type NextRequest } from "next/server"
-import { put } from "@vercel/blob"
-import sharp from "sharp"
+import { v2 as cloudinary } from "cloudinary"
 
 import { getApiOwnerContext } from "@/server/auth/guards"
 
-const MAX_INPUT = 1 * 1024 * 1024 // 1 MB (raw upload)
-const MAX_OUTPUT = 30 * 1024 // 30 KB (após conversão)
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+})
+
+const MAX_INPUT = 1 * 1024 * 1024
 const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"]
 
 export async function POST(req: NextRequest) {
   const ctx = await getApiOwnerContext()
   if (ctx instanceof NextResponse) return ctx
+
+  if (!process.env.CLOUDINARY_CLOUD_NAME) {
+    return NextResponse.json({ error: "upload_not_configured" }, { status: 503 })
+  }
 
   const formData = await req.formData()
   const file = formData.get("file")
@@ -25,24 +33,16 @@ export async function POST(req: NextRequest) {
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())
+  const base64 = `data:${file.type};base64,${buffer.toString("base64")}`
 
-  let webp = await sharp(buffer)
-    .resize(256, 256, { fit: "cover", withoutEnlargement: true })
-    .webp({ quality: 80 })
-    .toBuffer()
+  const result = await cloudinary.uploader.upload(base64, {
+    folder: `reserveja/${ctx.establishmentId}`,
+    transformation: [
+      { width: 256, height: 256, crop: "fill", gravity: "auto" },
+      { quality: "auto", fetch_format: "webp" },
+    ],
+    resource_type: "image",
+  })
 
-  if (webp.byteLength > MAX_OUTPUT) {
-    webp = await sharp(buffer)
-      .resize(256, 256, { fit: "cover", withoutEnlargement: true })
-      .webp({ quality: 50 })
-      .toBuffer()
-
-    if (webp.byteLength > MAX_OUTPUT) {
-      return NextResponse.json({ error: "still_too_large" }, { status: 400 })
-    }
-  }
-
-  const pathname = `establishments/${ctx.establishmentId}/${Date.now()}.webp`
-  const blob = await put(pathname, webp, { access: "public", addRandomSuffix: true })
-  return NextResponse.json({ url: blob.url })
+  return NextResponse.json({ url: result.secure_url })
 }
