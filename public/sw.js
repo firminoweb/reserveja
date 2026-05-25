@@ -12,6 +12,10 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(self.clients.claim())
 })
 
+// Fetch handler mínimo — Chrome exige pra considerar o site "instalável" (PWA).
+// Não interceptamos nem cacheamos nada; Next.js cuida de tudo.
+self.addEventListener("fetch", () => {})
+
 self.addEventListener("push", (event) => {
   let payload = { title: "Reserve Já", body: "Você tem um lembrete", url: "/" }
   if (event.data) {

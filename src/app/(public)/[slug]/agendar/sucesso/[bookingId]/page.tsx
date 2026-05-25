@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { db } from "@/lib/db"
 import { Button } from "@/components/ui/button"
 import { PushOptIn } from "@/components/booking/push-opt-in"
+import { InstallBanner } from "@/components/pwa/install-banner"
 import { CopyLinkButton } from "@/components/booking/copy-link-button"
 import { AddToCalendarMenu } from "@/components/booking/add-to-calendar-menu"
 import { formatLocal } from "@/lib/time"
@@ -109,6 +110,8 @@ export default async function AgendarSucesso(
         ) : null}
         <PushOptIn bookingToken={booking.publicToken} />
       </div>
+
+      <InstallBanner />
     </main>
   )
 }
