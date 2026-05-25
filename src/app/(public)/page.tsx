@@ -15,7 +15,7 @@ const FEATURES = [
   {
     icon: MessageCircle,
     t: "2. Confirmação automática",
-    d: "WhatsApp dispara mensagem na hora e lembrete 1 hora antes.",
+    d: "E-mail com convite de calendário na hora e lembrete antes do horário.",
   },
   {
     icon: Sparkles,
@@ -90,9 +90,8 @@ export default async function HomePage() {
             <span className="text-primary">pro seu negócio</span>.
           </h1>
           <p className="mt-4 md:mt-6 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-            Seu cliente agenda em 3 cliques pelo link do salão. Você gerencia tudo
-            num painel simples — sem app, sem cadastro pro cliente, sem fila no
-            WhatsApp.
+            Seu cliente agenda em 3 cliques pelo link do seu negócio. Você gerencia
+            tudo num painel simples — sem app, sem cadastro pro cliente.
           </p>
           <div className="mt-8 md:mt-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-center gap-3">
             <Button asChild size="lg" className="shadow-md shadow-primary/20">
@@ -136,7 +135,7 @@ export default async function HomePage() {
           <div className="relative">
             <LogoMark className="mx-auto size-14" onDark />
             <h2 className="mt-4 text-2xl md:text-3xl font-bold">
-              Pronto pra desafogar o WhatsApp?
+              Pronto pra organizar sua agenda?
             </h2>
             <p className="mt-2 text-primary-foreground/85 max-w-xl mx-auto">
               Crie sua página em menos de 2 minutos. Grátis enquanto seu negócio

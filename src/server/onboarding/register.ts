@@ -90,6 +90,7 @@ export async function registerOwner(input: SignUpInput) {
       const organization = await tx.organization.create({
         data: {
           name: input.establishmentName,
+          type: input.type,
           category: input.category,
           taxId,
           status: "TRIAL",

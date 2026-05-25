@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from "react"
 import { useForm, useWatch } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { Building2, Check, Loader2, User, X } from "lucide-react"
 import { maskBR } from "@/lib/phone"
-import { maskTaxId } from "@/lib/tax"
-import { BUSINESS_CATEGORY_OPTIONS } from "@/lib/business-categories"
-import { Check, Loader2, X } from "lucide-react"
+import { maskCNPJ, maskCPF } from "@/lib/tax"
+import { getCategoriesByType } from "@/lib/business-categories"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -24,6 +24,7 @@ import { PasswordStrength } from "@/components/ui/password-strength"
 import { AddressFields } from "@/components/ui/address-fields"
 import { signUpSchema, type SignUpInput } from "@/lib/validations/auth"
 import { slugify } from "@/lib/slug"
+import { cn } from "@/lib/utils"
 import { registerAction } from "./actions"
 
 type SlugStatus = "idle" | "checking" | "available" | "taken" | "invalid"
@@ -35,6 +36,7 @@ export function RegisterForm() {
   const form = useForm<SignUpInput>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
+      type: "EMPRESA",
       name: "",
       email: "",
       password: "",
@@ -53,6 +55,19 @@ export function RegisterForm() {
     },
   })
 
+  const orgType = useWatch({ control: form.control, name: "type" })
+  const isEmpresa = orgType === "EMPRESA"
+  const categories = useMemo(() => getCategoriesByType(orgType), [orgType])
+
+  useEffect(() => {
+    const current = form.getValues("category")
+    const valid = categories.some((c) => c.value === current)
+    if (!valid) {
+      form.setValue("category", categories[0].value)
+    }
+    form.setValue("taxId", "")
+  }, [orgType, categories, form])
+
   const establishmentName = useWatch({
     control: form.control,
     name: "establishmentName",
@@ -65,8 +80,6 @@ export function RegisterForm() {
 
   const password = useWatch({ control: form.control, name: "password" })
   const slug = useWatch({ control: form.control, name: "slug" })
-  // Status sai de slug atual + último resultado do servidor. Evita setState
-  // síncrono em useEffect (eslint react-hooks/set-state-in-effect).
   const slugStatus = useMemo<SlugStatus>(() => {
     if (!slug) return "idle"
     if (slug.length < 3) return "invalid"
@@ -111,6 +124,54 @@ export function RegisterForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="mt-6 space-y-4">
+        {/* Tipo de conta */}
+        <FormField
+          control={form.control}
+          name="type"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Tipo de conta</FormLabel>
+              <FormControl>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => field.onChange("EMPRESA")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors",
+                      field.value === "EMPRESA"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <Building2 className="size-6" />
+                    <span className="text-sm font-semibold">Empresa</span>
+                    <span className="text-xs text-muted-foreground text-center">
+                      Salão, barbearia, clínica, loja...
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => field.onChange("AUTONOMO")}
+                    className={cn(
+                      "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-colors",
+                      field.value === "AUTONOMO"
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-primary/40",
+                    )}
+                  >
+                    <User className="size-6" />
+                    <span className="text-sm font-semibold">Autônomo</span>
+                    <span className="text-xs text-muted-foreground text-center">
+                      Personal, nutricionista, fotógrafo...
+                    </span>
+                  </button>
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
         <FormField
           control={form.control}
           name="name"
@@ -152,14 +213,24 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
+
+        <div className="pt-4 border-t">
+          <h2 className="text-sm font-semibold mb-3">
+            {isEmpresa ? "Dados do negócio" : "Dados profissionais"}
+          </h2>
+        </div>
+
         <FormField
           control={form.control}
           name="establishmentName"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome do salão</FormLabel>
+              <FormLabel>{isEmpresa ? "Nome do negócio" : "Nome profissional"}</FormLabel>
               <FormControl>
-                <Input placeholder="Ex.: Barbearia do João" {...field} />
+                <Input
+                  placeholder={isEmpresa ? "Ex.: Barbearia do João" : "Ex.: João Fitness"}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -170,18 +241,40 @@ export function RegisterForm() {
           name="category"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Categoria do negócio</FormLabel>
+              <FormLabel>Categoria</FormLabel>
               <FormControl>
                 <select
                   {...field}
                   className="flex h-11 w-full rounded-md border border-input bg-transparent px-3.5 py-2 text-base shadow-xs focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/40 outline-none"
                 >
-                  {BUSINESS_CATEGORY_OPTIONS.map((o) => (
+                  {categories.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
                   ))}
                 </select>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="taxId"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{isEmpresa ? "CNPJ" : "CPF"}</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder={isEmpresa ? "00.000.000/0000-00" : "000.000.000-00"}
+                  inputMode="numeric"
+                  {...field}
+                  onChange={(e) =>
+                    field.onChange(
+                      isEmpresa ? maskCNPJ(e.target.value) : maskCPF(e.target.value),
+                    )
+                  }
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -240,7 +333,7 @@ export function RegisterForm() {
           name="whatsapp"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>WhatsApp do salão</FormLabel>
+              <FormLabel>{isEmpresa ? "WhatsApp do negócio" : "Seu WhatsApp"}</FormLabel>
               <FormControl>
                 <Input
                   placeholder="(11) 98765-4321"
@@ -254,30 +347,11 @@ export function RegisterForm() {
             </FormItem>
           )}
         />
-        <FormField
-          control={form.control}
-          name="taxId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>CPF ou CNPJ (opcional)</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
-                  inputMode="numeric"
-                  {...field}
-                  onChange={(e) => field.onChange(maskTaxId(e.target.value))}
-                />
-              </FormControl>
-              <FormDescription>
-                Pode preencher depois — usaremos pra emitir nota fiscal da mensalidade.
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
 
         <div className="pt-4 border-t">
-          <h2 className="text-sm font-semibold mb-3">Endereço do estabelecimento</h2>
+          <h2 className="text-sm font-semibold mb-3">
+            {isEmpresa ? "Endereço do estabelecimento" : "Endereço de atendimento"}
+          </h2>
           <AddressFields />
         </div>
 

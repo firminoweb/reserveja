@@ -23,11 +23,14 @@ export default async function PanelConfigPage() {
       </p>
 
       <section className="mt-8">
-        <h2 className="text-lg font-semibold">Empresa</h2>
+        <h2 className="text-lg font-semibold">
+          {organization.type === "AUTONOMO" ? "Profissional" : "Empresa"}
+        </h2>
         <p className="text-sm text-muted-foreground">
           Dados que se aplicam a todas as unidades.
         </p>
         <OrganizationForm
+          orgType={organization.type}
           initial={{
             name: organization.name,
             category: organization.category,
@@ -50,7 +53,6 @@ export default async function PanelConfigPage() {
             whatsapp: establishment.whatsapp,
             timezone: establishment.timezone,
             logoUrl: establishment.logoUrl,
-            coverUrl: establishment.coverUrl,
             cep: establishment.cep,
             street: establishment.street,
             streetNumber: establishment.streetNumber,

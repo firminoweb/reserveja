@@ -1,9 +1,11 @@
 "use client"
 
+import { useMemo } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import type { OrgType } from "@prisma/client"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,8 +18,8 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
-import { BUSINESS_CATEGORY_OPTIONS } from "@/lib/business-categories"
-import { maskTaxId } from "@/lib/tax"
+import { getCategoriesByType } from "@/lib/business-categories"
+import { maskCNPJ, maskCPF, maskTaxId } from "@/lib/tax"
 import {
   updateOrganizationSchema,
   type UpdateOrganizationInput,
@@ -25,11 +27,15 @@ import {
 import { updateOrganizationAction } from "@/app/(panel)/painel/configuracoes/actions"
 
 type Props = {
+  orgType: OrgType
   initial: { name: string; category: UpdateOrganizationInput["category"]; taxId: string | null }
 }
 
-export function OrganizationForm({ initial }: Props) {
+export function OrganizationForm({ orgType, initial }: Props) {
   const router = useRouter()
+  const isEmpresa = orgType === "EMPRESA"
+  const categories = useMemo(() => getCategoriesByType(orgType), [orgType])
+
   const form = useForm<UpdateOrganizationInput>({
     resolver: zodResolver(updateOrganizationSchema),
     defaultValues: {
@@ -46,7 +52,7 @@ export function OrganizationForm({ initial }: Props) {
       else toast.error(res.message)
       return
     }
-    toast.success("Empresa atualizada")
+    toast.success(isEmpresa ? "Empresa atualizada" : "Dados atualizados")
     router.refresh()
   }
 
@@ -58,11 +64,13 @@ export function OrganizationForm({ initial }: Props) {
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nome da empresa</FormLabel>
+              <FormLabel>{isEmpresa ? "Nome da empresa" : "Nome profissional"}</FormLabel>
               <FormControl>
                 <Input {...field} />
               </FormControl>
-              <FormDescription>Razão social ou nome da marca.</FormDescription>
+              <FormDescription>
+                {isEmpresa ? "Razão social ou nome da marca." : "Como você quer ser encontrado."}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -78,7 +86,7 @@ export function OrganizationForm({ initial }: Props) {
                   {...field}
                   className="flex h-11 w-full rounded-md border border-input bg-transparent px-3.5 py-2 text-base shadow-xs focus-visible:border-ring focus-visible:ring-4 focus-visible:ring-ring/40 outline-none"
                 >
-                  {BUSINESS_CATEGORY_OPTIONS.map((o) => (
+                  {categories.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -94,22 +102,23 @@ export function OrganizationForm({ initial }: Props) {
           name="taxId"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>CPF / CNPJ</FormLabel>
+              <FormLabel>{isEmpresa ? "CNPJ" : "CPF"}</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  placeholder={isEmpresa ? "00.000.000/0000-00" : "000.000.000-00"}
                   inputMode="numeric"
                   {...field}
-                  onChange={(e) => field.onChange(maskTaxId(e.target.value))}
+                  onChange={(e) =>
+                    field.onChange(isEmpresa ? maskCNPJ(e.target.value) : maskCPF(e.target.value))
+                  }
                 />
               </FormControl>
-              <FormDescription>Usado pra emissão de nota fiscal.</FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
         <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Salvando..." : "Salvar empresa"}
+          {form.formState.isSubmitting ? "Salvando..." : "Salvar"}
         </Button>
       </form>
     </Form>

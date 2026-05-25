@@ -5,9 +5,8 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { formatNationalBR, maskBR } from "@/lib/phone"
-import Image from "next/image"
-
 import { Button } from "@/components/ui/button"
+import { ImageUpload } from "@/components/ui/image-upload"
 import { Input } from "@/components/ui/input"
 import {
   Form,
@@ -47,7 +46,6 @@ type Props = {
     whatsapp: string
     timezone: string
     logoUrl: string | null
-    coverUrl: string | null
     cep: string | null
     street: string | null
     streetNumber: string | null
@@ -72,7 +70,6 @@ export function SettingsForm({ initial }: Props) {
       whatsapp: formatNationalBR(initial.whatsapp),
       timezone: initial.timezone,
       logoUrl: initial.logoUrl ?? "",
-      coverUrl: initial.coverUrl ?? "",
       cep: initial.cep ? maskCep(initial.cep) : "",
       street: initial.street ?? "",
       streetNumber: initial.streetNumber ?? "",
@@ -168,57 +165,25 @@ export function SettingsForm({ initial }: Props) {
           )}
         />
 
-        <div className="grid gap-4">
-          <FormField
-            control={form.control}
-            name="logoUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL do logo</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://..." {...field} />
-                </FormControl>
-                <FormDescription>
-                  Cole um link público (Cloudinary, Imgur, S3 etc.). Upload integrado vem depois.
-                </FormDescription>
-                {field.value ? (
-                  <Image
-                    src={field.value}
-                    alt="Preview do logo"
-                    width={64}
-                    height={64}
-                    unoptimized
-                    className="mt-2 size-16 rounded-md object-cover border"
-                  />
-                ) : null}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="coverUrl"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>URL da capa</FormLabel>
-                <FormControl>
-                  <Input placeholder="https://..." {...field} />
-                </FormControl>
-                {field.value ? (
-                  <Image
-                    src={field.value}
-                    alt="Preview da capa"
-                    width={400}
-                    height={120}
-                    unoptimized
-                    className="mt-2 h-24 w-full rounded-md object-cover border"
-                  />
-                ) : null}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="logoUrl"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Logo</FormLabel>
+              <FormControl>
+                <ImageUpload
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                />
+              </FormControl>
+              <FormDescription>
+                JPG, PNG ou WebP. Convertido pra WebP automaticamente.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="pt-2 border-t">
           <h3 className="text-sm font-semibold mb-1">Endereço</h3>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { Check, Sparkles } from "lucide-react"
+import { Building2, Check, Sparkles, User } from "lucide-react"
 
 import { auth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
@@ -11,29 +11,50 @@ import { SiteFooter } from "@/components/site/site-footer"
 export const metadata: Metadata = {
   title: "Preços",
   description:
-    "Comece grátis com o Reserve Já. Veja os planos disponíveis para salões, barbearias e prestadores de serviço.",
+    "Comece grátis com o Reserve Já. Planos para empresas e profissionais autônomos.",
 }
 
-const FREE_FEATURES = [
+const AUTONOMO_FREE = [
   "Página pública de agendamento",
-  "Confirmação por WhatsApp",
+  "Confirmação por e-mail + calendário",
+  "Painel de gestão",
+  "1 profissional (você)",
+  "30 agendamentos/mês",
+  "Upload de logo",
+]
+
+const AUTONOMO_PRO = [
+  "Tudo do plano Grátis",
+  "Agendamentos ilimitados",
+  "Lembretes por WhatsApp",
+  "Imagens nos serviços",
+  "Capa personalizada",
+  "Relatórios e métricas",
+]
+
+const EMPRESA_FREE = [
+  "Página pública de agendamento",
   "Confirmação por e-mail + calendário",
   "Painel de gestão",
   "1 unidade",
   "Até 2 profissionais",
   "50 agendamentos/mês",
+  "Upload de logo",
 ]
 
-const PRO_FEATURES = [
+const EMPRESA_PRO = [
   "Tudo do plano Grátis",
   "Até 3 unidades",
   "Profissionais ilimitados",
   "Agendamentos ilimitados",
-  "Lembretes automáticos",
+  "Lembretes por WhatsApp",
+  "Gestão de equipe (staff)",
+  "Imagens nos serviços",
+  "Capa personalizada",
   "Relatórios e métricas",
 ]
 
-const ENTERPRISE_FEATURES = [
+const EMPRESA_ENTERPRISE = [
   "Tudo do plano Profissional",
   "Unidades ilimitadas",
   "Suporte prioritário",
@@ -46,6 +67,10 @@ const FAQS = [
     a: "Não. O plano Grátis não exige cartão, pagamento ou compromisso. Você cria sua conta e já pode usar.",
   },
   {
+    q: "Qual a diferença entre Empresa e Autônomo?",
+    a: "Empresa é pra negócios com CNPJ (salões, barbearias, clínicas). Autônomo é pra profissionais com CPF (personal trainer, nutricionista, fotógrafo). Os planos e limites são adaptados pra cada perfil.",
+  },
+  {
     q: "Posso trocar de plano depois?",
     a: "Sim. Quando os planos pagos estiverem disponíveis, você poderá fazer upgrade a qualquer momento sem perder dados.",
   },
@@ -54,7 +79,7 @@ const FAQS = [
     a: "Não. Seus clientes agendam pelo link do seu estabelecimento, direto no navegador — sem app, sem cadastro.",
   },
   {
-    q: "E se eu passar do limite de 50 agendamentos no plano Grátis?",
+    q: "E se eu passar do limite de agendamentos no plano Grátis?",
     a: "Novos agendamentos ficam bloqueados até o próximo mês. Você será avisado antes de atingir o limite.",
   },
 ]
@@ -69,6 +94,14 @@ function FeatureList({ items }: { items: string[] }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+function SoonBadge() {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
+      Em breve
+    </span>
   )
 }
 
@@ -120,15 +153,78 @@ export default async function PrecosPage() {
           <span className="text-primary">Cresça quando precisar.</span>
         </h1>
         <p className="mt-4 text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
-          O plano Grátis já inclui tudo pra você começar a receber agendamentos
-          hoje. Sem cartão, sem compromisso.
+          Planos pensados pro seu tipo de negócio. Sem cartão, sem compromisso.
         </p>
       </section>
 
-      {/* PLANS */}
+      {/* AUTÔNOMO */}
+      <section className="mx-auto max-w-5xl px-4 md:px-6 pb-12">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <User className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Autônomo</h2>
+            <p className="text-sm text-muted-foreground">
+              Personal, nutricionista, fotógrafo, consultor...
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 max-w-3xl">
+          {/* Autônomo Grátis */}
+          <div className="rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
+            <h3 className="text-lg font-semibold">Grátis</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pra começar a receber clientes
+            </p>
+            <div className="mt-5">
+              <span className="text-4xl font-bold">R$ 0</span>
+              <span className="text-sm text-muted-foreground">/mês</span>
+            </div>
+            <Button asChild size="lg" className="mt-6 w-full">
+              <Link href="/cadastro">Começar grátis</Link>
+            </Button>
+            <FeatureList items={AUTONOMO_FREE} />
+          </div>
+
+          {/* Autônomo Pro */}
+          <div className="rounded-2xl border-2 border-primary bg-card p-6 shadow-lg flex flex-col relative">
+            <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+              <Sparkles className="size-3" aria-hidden />
+              Recomendado
+            </span>
+            <h3 className="text-lg font-semibold">Pro</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Pra quem quer crescer
+            </p>
+            <div className="mt-5 flex items-baseline gap-2">
+              <span className="text-4xl font-bold">R$ 29,90</span>
+              <span className="text-sm text-muted-foreground">/mês</span>
+              <SoonBadge />
+            </div>
+            <Button size="lg" className="mt-6 w-full" disabled>
+              Avise-me quando lançar
+            </Button>
+            <FeatureList items={AUTONOMO_PRO} />
+          </div>
+        </div>
+      </section>
+
+      {/* EMPRESA */}
       <section className="mx-auto max-w-5xl px-4 md:px-6 pb-16">
+        <div className="flex items-center gap-2 mb-6">
+          <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Building2 className="size-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Empresa</h2>
+            <p className="text-sm text-muted-foreground">
+              Salão, barbearia, clínica, pet shop, mecânica...
+            </p>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* GRÁTIS */}
+          {/* Empresa Grátis */}
           <div className="rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
             <h3 className="text-lg font-semibold">Grátis</h3>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -141,10 +237,10 @@ export default async function PrecosPage() {
             <Button asChild size="lg" className="mt-6 w-full">
               <Link href="/cadastro">Começar grátis</Link>
             </Button>
-            <FeatureList items={FREE_FEATURES} />
+            <FeatureList items={EMPRESA_FREE} />
           </div>
 
-          {/* PROFISSIONAL */}
+          {/* Empresa Profissional */}
           <div className="rounded-2xl border-2 border-primary bg-card p-6 shadow-lg flex flex-col relative">
             <span className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
               <Sparkles className="size-3" aria-hidden />
@@ -154,32 +250,32 @@ export default async function PrecosPage() {
             <p className="mt-1 text-sm text-muted-foreground">
               Pra negócios em crescimento
             </p>
-            <div className="mt-5">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Em breve
-              </span>
+            <div className="mt-5 flex items-baseline gap-2">
+              <span className="text-4xl font-bold">R$ 59,90</span>
+              <span className="text-sm text-muted-foreground">/mês</span>
+              <SoonBadge />
             </div>
             <Button size="lg" className="mt-6 w-full" disabled>
               Avise-me quando lançar
             </Button>
-            <FeatureList items={PRO_FEATURES} />
+            <FeatureList items={EMPRESA_PRO} />
           </div>
 
-          {/* EMPRESARIAL */}
+          {/* Empresa Empresarial */}
           <div className="rounded-2xl border bg-card p-6 shadow-sm flex flex-col">
             <h3 className="text-lg font-semibold">Empresarial</h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Pra redes e franquias
             </p>
-            <div className="mt-5">
-              <span className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-                Em breve
-              </span>
+            <div className="mt-5 flex items-baseline gap-2">
+              <span className="text-4xl font-bold">R$ 149,90</span>
+              <span className="text-sm text-muted-foreground">/mês</span>
+              <SoonBadge />
             </div>
             <Button size="lg" variant="outline" className="mt-6 w-full" disabled>
               Avise-me quando lançar
             </Button>
-            <FeatureList items={ENTERPRISE_FEATURES} />
+            <FeatureList items={EMPRESA_ENTERPRISE} />
           </div>
         </div>
       </section>

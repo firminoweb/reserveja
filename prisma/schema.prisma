@@ -115,6 +115,11 @@ enum OrgStatus {
   SUSPENDED
 }
 
+enum OrgType {
+  EMPRESA
+  AUTONOMO
+}
+
 enum BusinessCategory {
   BARBEARIA
   SALAO_BELEZA
@@ -126,6 +131,17 @@ enum BusinessCategory {
   PET_SHOP
   CLINICA_SAUDE
   ESTUDIO_TATUAGEM
+  PERSONAL_TRAINER
+  NUTRICIONISTA
+  PSICOLOGO
+  FISIOTERAPEUTA
+  COACH_CONSULTOR
+  ADVOGADO
+  CONTADOR
+  FOTOGRAFO
+  PROFESSOR_PARTICULAR
+  DENTISTA
+  VETERINARIO
   OUTRO
 }
 
@@ -135,6 +151,7 @@ enum BusinessCategory {
 model Organization {
   id             String           @id @default(cuid())
   name           String
+  type           OrgType          @default(EMPRESA)
   category       BusinessCategory @default(OUTRO)
   taxId          String?          // CPF (11 dígitos) ou CNPJ (14 dígitos), só dígitos
   status         OrgStatus        @default(TRIAL)

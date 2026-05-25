@@ -70,7 +70,7 @@ export default function PrivacidadePage() {
                 </tr>
                 <tr className="border-b border-border/50">
                   <td>Telefone</td>
-                  <td>Confirmação e lembrete via WhatsApp</td>
+                  <td>Confirmação e lembrete por e-mail (e WhatsApp, quando disponível)</td>
                   <td>Execução de contrato</td>
                 </tr>
                 <tr className="border-b border-border/50">
@@ -114,7 +114,7 @@ export default function PrivacidadePage() {
             <h2>3. Como Usamos os Dados</h2>
             <ul>
               <li>Processar e confirmar agendamentos.</li>
-              <li>Enviar notificações transacionais (confirmação, lembrete, cancelamento) por WhatsApp, e-mail e push.</li>
+              <li>Enviar notificações transacionais (confirmação, lembrete, cancelamento) por e-mail, push e, quando disponível, WhatsApp.</li>
               <li>Exibir informações do estabelecimento na página pública.</li>
               <li>Gerar estatísticas agregadas e anônimas para melhorar a Plataforma.</li>
               <li>Cumprir obrigações legais e regulatórias.</li>
