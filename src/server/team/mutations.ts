@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { emailButton, emailLayout, emailMuted } from "@/lib/email-template"
 import type {
   InviteMemberInput,
   UpdateMembershipInput,
@@ -119,13 +120,13 @@ export async function inviteMember(
         `Acesse pelo link abaixo e troque a senha em "Esqueci minha senha":`,
         `${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/login`,
       ].join("\n"),
-      html: `
-        <p>Olá ${user.name.replace(/</g, "&lt;")},</p>
-        <p>Você foi convidado pra acessar uma empresa no <strong>Reserve Já</strong>.</p>
-        <p><strong>Login:</strong> ${user.email}<br>
-           <strong>Senha temporária:</strong> <code>${tempPassword}</code></p>
-        <p>Acesse <a href="${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/login">${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/login</a> e troque a senha pelo fluxo "Esqueci minha senha".</p>
-      `,
+      html: emailLayout([
+        `<p>Olá <strong>${user.name.replace(/</g, "&lt;")}</strong>,</p>`,
+        `<p>Você foi convidado pra acessar uma empresa no Reserve Já.</p>`,
+        `<table style="margin:16px 0;font-size:14px"><tr><td style="padding:4px 12px 4px 0;color:#6b7280">Login</td><td><strong>${user.email}</strong></td></tr><tr><td style="padding:4px 12px 4px 0;color:#6b7280">Senha temporária</td><td><code style="background:#f4f4f5;padding:2px 6px;border-radius:4px">${tempPassword}</code></td></tr></table>`,
+        `<p style="text-align:center;margin:24px 0">${emailButton(`${process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"}/login`, "Acessar o painel")}</p>`,
+        emailMuted('Troque a senha no primeiro acesso pelo fluxo "Esqueci minha senha".'),
+      ].join("")),
     })
   }
 

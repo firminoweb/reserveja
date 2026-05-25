@@ -4,6 +4,7 @@ import { addMinutes } from "date-fns"
 
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { emailButton, emailLayout, emailMuted } from "@/lib/email-template"
 import { isPasswordLeaked } from "@/lib/hibp"
 
 const TOKEN_TTL_MIN = 60
@@ -61,13 +62,13 @@ export async function requestPasswordReset(email: string): Promise<void> {
       ``,
       `Se não foi você, pode ignorar este email — sua senha continua a mesma.`,
     ].join("\n"),
-    html: `
-      <p>Olá ${escapeHtml(user.name)},</p>
-      <p>Recebemos um pedido pra redefinir sua senha no <strong>Reserve Já</strong>. Se foi você, clique no botão abaixo (válido por ${TOKEN_TTL_MIN} min):</p>
-      <p><a href="${link}" style="display:inline-block;padding:10px 16px;background:#111;color:#fff;border-radius:6px;text-decoration:none">Redefinir senha</a></p>
-      <p>Ou copie esse link:<br><a href="${link}">${link}</a></p>
-      <p style="color:#666;font-size:14px;margin-top:24px">Se não foi você, pode ignorar este email — sua senha continua a mesma.</p>
-    `,
+    html: emailLayout([
+      `<p>Olá <strong>${escapeHtml(user.name)}</strong>,</p>`,
+      `<p>Recebemos um pedido pra redefinir sua senha. Se foi você, clique no botão abaixo (válido por ${TOKEN_TTL_MIN} min):</p>`,
+      `<p style="text-align:center;margin:24px 0">${emailButton(link, "Redefinir senha")}</p>`,
+      `<p style="font-size:13px;color:#6b7280">Ou copie esse link:<br><a href="${link}" style="color:#4F46E5;word-break:break-all">${link}</a></p>`,
+      emailMuted("Se não foi você, pode ignorar este email — sua senha continua a mesma."),
+    ].join("")),
   })
 }
 

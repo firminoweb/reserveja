@@ -1,6 +1,7 @@
 import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
 import { getFromAddress, sendEmail } from "@/lib/email"
+import { emailButton, emailLayout, emailMuted } from "@/lib/email-template"
 import { formatNationalBR } from "@/lib/phone"
 import { buildIcs } from "@/lib/ics"
 import { sendPushForBooking } from "@/lib/push"
@@ -90,15 +91,17 @@ export async function sendBookingConfirmation(bookingId: string): Promise<void> 
         attendeeName: booking.clientName,
       })
 
-      const html = [
-        `<p>Olá <strong>${firstName}</strong>! Seu horário em <strong>${booking.establishment.name}</strong> está confirmado.</p>`,
-        `<p><strong>📅 ${dateLine}</strong><br>✂️ ${booking.service.name} com ${booking.professional.name}</p>`,
-        addressLine ? `<p>📍 ${addressLine}</p>` : "",
-        `<p>O convite anexo adiciona o evento ao seu calendário (Google, Apple ou Outlook) com lembrete 30min antes.</p>`,
-        `<p><a href="${link}">Ver ou cancelar agendamento</a></p>`,
-      ]
-        .filter(Boolean)
-        .join("")
+      const html = emailLayout([
+        `<p>Olá <strong>${firstName}</strong>! Seu horário está confirmado.</p>`,
+        `<table style="margin:16px 0;font-size:14px">`,
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Local</td><td><strong>${booking.establishment.name}</strong></td></tr>`,
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Quando</td><td><strong>${dateLine}</strong></td></tr>`,
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Serviço</td><td>${booking.service.name} com ${booking.professional.name}</td></tr>`,
+        addressLine ? `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Endereço</td><td>${addressLine}</td></tr>` : "",
+        `</table>`,
+        `<p style="font-size:13px;color:#6b7280">O convite anexo adiciona o evento ao seu calendário com lembrete 30min antes.</p>`,
+        `<p style="text-align:center;margin:24px 0">${emailButton(link, "Ver ou cancelar agendamento")}</p>`,
+      ].filter(Boolean).join(""))
 
       await sendEmail({
         to: booking.clientEmail,
@@ -173,7 +176,14 @@ export async function sendBookingCancellation(bookingId: string): Promise<void> 
       to: booking.clientEmail,
       subject: `Cancelado: ${dateLine} — ${booking.establishment.name}`,
       text: `Seu horário em ${booking.establishment.name} no dia ${dateLine} foi cancelado.`,
-      html: `<p>Seu horário em <strong>${booking.establishment.name}</strong> em <strong>${dateLine}</strong> foi cancelado.</p><p>O evento será removido do seu calendário automaticamente.</p>`,
+      html: emailLayout([
+        `<p>Seu horário em <strong>${booking.establishment.name}</strong> foi cancelado.</p>`,
+        `<table style="margin:16px 0;font-size:14px">`,
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Quando</td><td>${dateLine}</td></tr>`,
+        `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Serviço</td><td>${booking.service.name} com ${booking.professional.name}</td></tr>`,
+        `</table>`,
+        emailMuted("O evento será removido do seu calendário automaticamente."),
+      ].join("")),
       attachments: [
         {
           filename: "cancelamento.ics",
@@ -251,22 +261,20 @@ export async function sendNewBookingToOwners(bookingId: string): Promise<void> {
       .filter(Boolean)
       .join("\n")
 
-    const html = [
+    const html = emailLayout([
       `<p>Novo agendamento em <strong>${booking.establishment.name}</strong>:</p>`,
-      `<table style="border-collapse:collapse;font-size:14px">`,
-      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Cliente</td><td style="padding:4px 0"><strong>${booking.clientName}</strong></td></tr>`,
-      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Telefone</td><td style="padding:4px 0">${phoneFmt}</td></tr>`,
+      `<table style="margin:16px 0;font-size:14px">`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Cliente</td><td><strong>${booking.clientName}</strong></td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Telefone</td><td>${phoneFmt}</td></tr>`,
       booking.clientEmail
-        ? `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">E-mail</td><td style="padding:4px 0">${booking.clientEmail}</td></tr>`
+        ? `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">E-mail</td><td>${booking.clientEmail}</td></tr>`
         : "",
-      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Serviço</td><td style="padding:4px 0">${booking.service.name} (${priceStr})</td></tr>`,
-      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Profissional</td><td style="padding:4px 0">${booking.professional.name}</td></tr>`,
-      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Quando</td><td style="padding:4px 0"><strong>${dateLine}</strong></td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Serviço</td><td>${booking.service.name} (${priceStr})</td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Profissional</td><td>${booking.professional.name}</td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Quando</td><td><strong>${dateLine}</strong></td></tr>`,
       `</table>`,
-      `<p style="margin-top:16px"><a href="${panelUrl}" style="color:#4F46E5">Ver na agenda →</a></p>`,
-    ]
-      .filter(Boolean)
-      .join("")
+      `<p style="text-align:center;margin:24px 0">${emailButton(panelUrl, "Ver na agenda")}</p>`,
+    ].filter(Boolean).join(""))
 
     await Promise.all(
       eligible.map((m) =>

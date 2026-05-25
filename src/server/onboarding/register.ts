@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs"
 import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
 import { sendEmail } from "@/lib/email"
+import { emailButton, emailLayout, emailMuted } from "@/lib/email-template"
 import { isPasswordLeaked } from "@/lib/hibp"
 import { toE164BR } from "@/lib/phone"
 import { slugify } from "@/lib/slug"
@@ -160,15 +161,13 @@ async function sendExistingAccountEmail(email: string) {
         ``,
         `Se não foi você, pode ignorar este email — nada foi alterado na sua conta.`,
       ].join("\n"),
-      html: `
-        <p>Alguém (talvez você) tentou criar uma nova conta no <strong>Reserve Já</strong> com este email.</p>
-        <p>Já existe uma conta com esse endereço.</p>
-        <ul>
-          <li><a href="${appUrl}/login">Fazer login</a></li>
-          <li><a href="${appUrl}/recuperar-senha">Recuperar senha</a></li>
-        </ul>
-        <p style="color:#6b7280;font-size:13px">Se não foi você, pode ignorar — nada foi alterado na sua conta.</p>
-      `,
+      html: emailLayout([
+        `<p>Alguém (talvez você) tentou criar uma nova conta no Reserve Já com este email.</p>`,
+        `<p>Já existe uma conta com esse endereço. Se foi você:</p>`,
+        `<p style="text-align:center;margin:24px 0">${emailButton(`${appUrl}/login`, "Fazer login")}</p>`,
+        `<p style="font-size:13px;color:#6b7280">Esqueceu a senha? <a href="${appUrl}/recuperar-senha" style="color:#4F46E5">Recuperar senha</a></p>`,
+        emailMuted("Se não foi você, pode ignorar — nada foi alterado na sua conta."),
+      ].join("")),
     })
   } catch {
     // Fail-open. Envio de email é best-effort.
@@ -220,26 +219,20 @@ async function sendWelcomeEmail(
     ]
       .filter(Boolean)
       .join("\n"),
-    html: `
-      <p>Olá ${safeName},</p>
-      <p><strong>${safeEstName}</strong> já está no ar no Reserve Já.</p>
-      ${addressLine ? `<p style="color:#6b7280;font-size:13px;">${safeAddressLine}</p>` : ""}
-      <p>Compartilhe esse link com seus clientes pra começarem a agendar:<br>
-        <a href="${publicUrl}">${publicUrl}</a>
-      </p>
-      <p>Acesse o painel pra gerenciar:<br>
-        <a href="${panelUrl}">${panelUrl}</a>
-      </p>
-      <h3>Próximos passos</h3>
-      <ol>
-        <li><a href="${appUrl}/painel/servicos">Cadastrar serviços</a></li>
-        <li><a href="${appUrl}/painel/profissionais">Cadastrar profissionais</a></li>
-        <li><a href="${appUrl}/painel/horarios">Ajustar horários de atendimento</a></li>
-      </ol>
-      <p style="color: #6b7280; font-size: 13px; margin-top: 24px;">
-        Esqueceu a senha? Recupere em <a href="${appUrl}/recuperar-senha">${appUrl}/recuperar-senha</a>.
-      </p>
-    `,
+    html: emailLayout([
+      `<p>Olá <strong>${safeName}</strong>,</p>`,
+      `<p><strong>${safeEstName}</strong> já está no ar no Reserve Já!</p>`,
+      addressLine ? `<p style="color:#6b7280;font-size:13px">${safeAddressLine}</p>` : "",
+      `<p>Compartilhe este link com seus clientes:<br><a href="${publicUrl}" style="color:#4F46E5;word-break:break-all">${publicUrl}</a></p>`,
+      `<p style="text-align:center;margin:24px 0">${emailButton(panelUrl, "Acessar o painel")}</p>`,
+      `<p style="font-size:14px;font-weight:600;margin-bottom:8px">Próximos passos:</p>`,
+      `<ol style="padding-left:20px;font-size:14px;line-height:1.8">`,
+      `  <li><a href="${appUrl}/painel/servicos" style="color:#4F46E5">Cadastrar serviços</a></li>`,
+      `  <li><a href="${appUrl}/painel/profissionais" style="color:#4F46E5">Cadastrar profissionais</a></li>`,
+      `  <li><a href="${appUrl}/painel/horarios" style="color:#4F46E5">Ajustar horários de atendimento</a></li>`,
+      `</ol>`,
+      emailMuted(`Esqueceu a senha? <a href="${appUrl}/recuperar-senha" style="color:#4F46E5">Recuperar senha</a>`),
+    ].filter(Boolean).join("")),
   })
 }
 

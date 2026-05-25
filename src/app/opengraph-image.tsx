@@ -14,45 +14,49 @@ export default function OGImage() {
           width: "100%",
           height: "100%",
           display: "flex",
+          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "#4F46E5",
-          gap: 48,
-          padding: "0 80px",
+          background: "#fff",
+          gap: 0,
         }}
       >
-        <LogoIconForImage size={160} />
-
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 12,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 64,
-              fontWeight: 700,
-              color: "#fff",
-              lineHeight: 1.1,
-            }}
-          >
-            Reserve Já
-          </div>
-          <div
-            style={{
-              fontSize: 28,
-              fontWeight: 400,
-              color: "rgba(255,255,255,0.8)",
-              lineHeight: 1.4,
-              maxWidth: 600,
-            }}
-          >
-            Agendamentos sem complicação pro seu negócio.
-            Sem app, sem cadastro pro cliente.
+        {/* Logo: icon + text */}
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <LogoIconForImage size={88} />
+          <div style={{ display: "flex", alignItems: "baseline", fontSize: 56, fontWeight: 700, letterSpacing: "-0.02em" }}>
+            <span style={{ color: "#1a1a2e" }}>reserve</span>
+            <span style={{ color: "#4F46E5" }}>já</span>
+            <span style={{ color: "#9ca3af", fontWeight: 500, fontSize: 44 }}>.app</span>
           </div>
         </div>
+
+        {/* Tagline */}
+        <div
+          style={{
+            marginTop: 28,
+            fontSize: 28,
+            color: "#6b7280",
+            fontWeight: 400,
+            textAlign: "center",
+            maxWidth: 700,
+            lineHeight: 1.5,
+          }}
+        >
+          Agendamentos sem complicação pro seu negócio.
+        </div>
+
+        {/* Subtle bottom accent line */}
+        <div
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 6,
+            background: "#4F46E5",
+          }}
+        />
       </div>
     ),
     { ...size },
