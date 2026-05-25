@@ -167,9 +167,25 @@ export default async function HomePage() {
       <footer className="border-t mt-auto">
         <div className="mx-auto max-w-6xl px-4 md:px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <Logo iconClassName="size-7" textClassName="text-sm" />
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Reserve Já — feito com café e código.
-          </p>
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4">
+            <nav className="flex items-center gap-3 text-xs text-muted-foreground">
+              <Link
+                href="/termos"
+                className="hover:text-foreground underline-offset-4 hover:underline"
+              >
+                Termos
+              </Link>
+              <Link
+                href="/privacidade"
+                className="hover:text-foreground underline-offset-4 hover:underline"
+              >
+                Privacidade
+              </Link>
+            </nav>
+            <p className="text-xs text-muted-foreground">
+              © {new Date().getFullYear()} Reserve Já
+            </p>
+          </div>
         </div>
       </footer>
     </main>

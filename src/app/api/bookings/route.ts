@@ -2,7 +2,10 @@ import { NextResponse, after, type NextRequest } from "next/server"
 
 import { clientIp, rateLimit } from "@/lib/rate-limit"
 import { createBooking, BookingError } from "@/server/booking/create"
-import { sendBookingConfirmation } from "@/server/notifications/booking"
+import {
+  sendBookingConfirmation,
+  sendNewBookingToOwners,
+} from "@/server/notifications/booking"
 import { createBookingSchema } from "@/lib/validations/booking"
 
 export async function POST(req: NextRequest) {
@@ -31,6 +34,7 @@ export async function POST(req: NextRequest) {
     // Notificação roda depois que a resposta foi enviada — não bloqueia o cliente
     // e qualquer falha de WhatsApp não derruba o booking que já foi gravado.
     after(() => sendBookingConfirmation(booking.id))
+    after(() => sendNewBookingToOwners(booking.id))
 
     return NextResponse.json(
       {

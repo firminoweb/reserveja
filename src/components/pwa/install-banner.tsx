@@ -42,26 +42,36 @@ export function InstallBanner() {
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null)
 
   useEffect(() => {
-    if (wasDismissedRecently() || isStandalone() || !isMobile()) return
+    let cancelled = false
+    let handler: ((e: Event) => void) | null = null
 
-    if (isIOSSafari()) {
-      setState("ios")
-      return
+    void (async () => {
+      await Promise.resolve()
+      if (cancelled) return
+      if (wasDismissedRecently() || isStandalone() || !isMobile()) return
+
+      if (isIOSSafari()) {
+        setState("ios")
+        return
+      }
+
+      handler = (e: Event) => {
+        e.preventDefault()
+        deferredPrompt.current = e as BeforeInstallPromptEvent
+        setState("native")
+      }
+
+      window.addEventListener("beforeinstallprompt", handler)
+
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("/sw.js").catch(() => {})
+      }
+    })()
+
+    return () => {
+      cancelled = true
+      if (handler) window.removeEventListener("beforeinstallprompt", handler)
     }
-
-    function handler(e: Event) {
-      e.preventDefault()
-      deferredPrompt.current = e as BeforeInstallPromptEvent
-      setState("native")
-    }
-
-    window.addEventListener("beforeinstallprompt", handler)
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {})
-    }
-
-    return () => window.removeEventListener("beforeinstallprompt", handler)
   }, [])
 
   function dismiss() {

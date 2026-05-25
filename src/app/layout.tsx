@@ -34,6 +34,14 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: false,
   },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: "Reserve Já",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 }
 
 export const viewport: Viewport = {

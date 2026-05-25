@@ -1,6 +1,7 @@
 import { formatAddressOneLine } from "@/lib/address"
 import { db } from "@/lib/db"
 import { getFromAddress, sendEmail } from "@/lib/email"
+import { formatNationalBR } from "@/lib/phone"
 import { buildIcs } from "@/lib/ics"
 import { sendPushForBooking } from "@/lib/push"
 import { formatLocal } from "@/lib/time"
@@ -183,6 +184,97 @@ export async function sendBookingCancellation(bookingId: string): Promise<void> 
     })
   } catch (err) {
     console.error("[notify] erro inesperado em sendBookingCancellation", err)
+  }
+}
+
+/**
+ * Notifica donos e staff do estabelecimento sobre um novo agendamento.
+ * Respeita MembershipUnit: sem rows = acesso total (notifica); com rows =
+ * só notifica se a unidade do booking está listada.
+ */
+export async function sendNewBookingToOwners(bookingId: string): Promise<void> {
+  try {
+    const booking = await db.booking.findUnique({
+      where: { id: bookingId },
+      include: {
+        service: { select: { name: true, priceCents: true } },
+        professional: { select: { name: true } },
+        establishment: {
+          select: {
+            id: true,
+            name: true,
+            timezone: true,
+            organizationId: true,
+          },
+        },
+      },
+    })
+    if (!booking) return
+
+    const members = await db.membership.findMany({
+      where: { organizationId: booking.establishment.organizationId },
+      include: {
+        user: { select: { email: true, name: true } },
+        units: { select: { establishmentId: true } },
+      },
+    })
+
+    const estId = booking.establishment.id
+    const eligible = members.filter((m) => {
+      if (m.units.length === 0) return true
+      return m.units.some((u) => u.establishmentId === estId)
+    })
+    if (eligible.length === 0) return
+
+    const tz = booking.establishment.timezone
+    const dateLine = formatLocal(booking.startsAt, tz, "EEEE, dd/MM 'às' HH:mm")
+    const phoneFmt = formatNationalBR(booking.clientPhone)
+    const priceStr =
+      booking.service.priceCents > 0
+        ? `R$ ${(booking.service.priceCents / 100).toFixed(2).replace(".", ",")}`
+        : "Gratuito"
+    const panelUrl = `${appUrl()}/painel/agenda`
+
+    const subject = `Novo agendamento: ${booking.clientName} — ${booking.service.name}`
+    const text = [
+      `Novo agendamento em ${booking.establishment.name}:`,
+      ``,
+      `Cliente: ${booking.clientName}`,
+      `Telefone: ${phoneFmt}`,
+      booking.clientEmail ? `E-mail: ${booking.clientEmail}` : "",
+      `Serviço: ${booking.service.name} (${priceStr})`,
+      `Profissional: ${booking.professional.name}`,
+      `Quando: ${dateLine}`,
+      ``,
+      `Ver na agenda: ${panelUrl}`,
+    ]
+      .filter(Boolean)
+      .join("\n")
+
+    const html = [
+      `<p>Novo agendamento em <strong>${booking.establishment.name}</strong>:</p>`,
+      `<table style="border-collapse:collapse;font-size:14px">`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Cliente</td><td style="padding:4px 0"><strong>${booking.clientName}</strong></td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Telefone</td><td style="padding:4px 0">${phoneFmt}</td></tr>`,
+      booking.clientEmail
+        ? `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">E-mail</td><td style="padding:4px 0">${booking.clientEmail}</td></tr>`
+        : "",
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Serviço</td><td style="padding:4px 0">${booking.service.name} (${priceStr})</td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Profissional</td><td style="padding:4px 0">${booking.professional.name}</td></tr>`,
+      `<tr><td style="padding:4px 12px 4px 0;color:#6b7280">Quando</td><td style="padding:4px 0"><strong>${dateLine}</strong></td></tr>`,
+      `</table>`,
+      `<p style="margin-top:16px"><a href="${panelUrl}" style="color:#4F46E5">Ver na agenda →</a></p>`,
+    ]
+      .filter(Boolean)
+      .join("")
+
+    await Promise.all(
+      eligible.map((m) =>
+        sendEmail({ to: m.user.email, subject, text, html }),
+      ),
+    )
+  } catch (err) {
+    console.error("[notify] erro em sendNewBookingToOwners", err)
   }
 }
 
