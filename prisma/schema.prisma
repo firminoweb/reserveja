@@ -120,6 +120,13 @@ enum OrgType {
   AUTONOMO
 }
 
+enum OrgPlan {
+  FREE
+  PRO           // Autônomo only
+  PROFISSIONAL  // Empresa only
+  EMPRESARIAL   // Empresa only
+}
+
 enum BusinessCategory {
   BARBEARIA
   SALAO_BELEZA
@@ -154,13 +161,31 @@ model Organization {
   type           OrgType          @default(EMPRESA)
   category       BusinessCategory @default(OUTRO)
   taxId          String?          // CPF (11 dígitos) ou CNPJ (14 dígitos), só dígitos
-  status         OrgStatus        @default(TRIAL)
-  planLimitUnits Int              @default(1)
-  planLimitUsers Int              @default(2)
-  establishments Establishment[]
-  memberships    Membership[]
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  status                   OrgStatus        @default(TRIAL)
+  plan                     OrgPlan          @default(FREE)
+  planLimitUnits           Int              @default(1)
+  planLimitUsers           Int              @default(2)
+  planLimitBookingsPerMonth Int             @default(50)
+  asaasCustomerId          String?
+  asaasSubscriptionId      String?
+  planExpiresAt            DateTime?        @db.Timestamptz(3)
+  establishments           Establishment[]
+  memberships              Membership[]
+  billingEvents            BillingEvent[]
+  createdAt                DateTime         @default(now())
+  updatedAt                DateTime         @updatedAt
+}
+
+model BillingEvent {
+  id              String       @id @default(cuid())
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  asaasPaymentId  String       @unique
+  event           String
+  processedAt     DateTime     @default(now()) @db.Timestamptz(3)
+
+  @@index([organizationId])
+  @@index([processedAt])
 }
 
 // Unidade física do negócio. Carrega slug público, horário, serviços,

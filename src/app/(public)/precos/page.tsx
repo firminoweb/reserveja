@@ -3,6 +3,7 @@ import Link from "next/link"
 import { Building2, Check, Sparkles, User } from "lucide-react"
 
 import { auth } from "@/lib/auth"
+import { isBillingEnabled } from "@/server/billing/plans"
 import { Button } from "@/components/ui/button"
 import { Logo, LogoMark } from "@/components/ui/logo"
 import { UserMenu } from "@/components/site/user-menu"
@@ -72,7 +73,7 @@ const FAQS = [
   },
   {
     q: "Posso trocar de plano depois?",
-    a: "Sim. Quando os planos pagos estiverem disponíveis, você poderá fazer upgrade a qualquer momento sem perder dados.",
+    a: "Sim. Você pode fazer upgrade ou cancelar a qualquer momento sem perder dados. O upgrade é imediato e o cancelamento volta pro plano Grátis.",
   },
   {
     q: "Meus clientes precisam baixar algum app?",
@@ -105,9 +106,29 @@ function SoonBadge() {
   )
 }
 
+function PlanCTA({ loggedIn, enabled }: { loggedIn: boolean; enabled: boolean }) {
+  if (!enabled) {
+    return (
+      <Button size="lg" className="mt-6 w-full" disabled>
+        Em breve
+      </Button>
+    )
+  }
+  return loggedIn ? (
+    <Button asChild size="lg" className="mt-6 w-full">
+      <Link href="/painel/plano">Fazer upgrade</Link>
+    </Button>
+  ) : (
+    <Button asChild size="lg" className="mt-6 w-full">
+      <Link href="/cadastro">Começar grátis</Link>
+    </Button>
+  )
+}
+
 export default async function PrecosPage() {
   const session = await auth()
   const user = session?.user
+  const billingActive = isBillingEnabled()
 
   return (
     <main className="flex-1">
@@ -200,11 +221,9 @@ export default async function PrecosPage() {
             <div className="mt-5 flex items-baseline gap-2">
               <span className="text-4xl font-bold">R$ 29,90</span>
               <span className="text-sm text-muted-foreground">/mês</span>
-              <SoonBadge />
+              {!billingActive && <SoonBadge />}
             </div>
-            <Button size="lg" className="mt-6 w-full" disabled>
-              Avise-me quando lançar
-            </Button>
+            <PlanCTA loggedIn={!!user} enabled={billingActive} />
             <FeatureList items={AUTONOMO_PRO} />
           </div>
         </div>
@@ -253,11 +272,9 @@ export default async function PrecosPage() {
             <div className="mt-5 flex items-baseline gap-2">
               <span className="text-4xl font-bold">R$ 59,90</span>
               <span className="text-sm text-muted-foreground">/mês</span>
-              <SoonBadge />
+              {!billingActive && <SoonBadge />}
             </div>
-            <Button size="lg" className="mt-6 w-full" disabled>
-              Avise-me quando lançar
-            </Button>
+            <PlanCTA loggedIn={!!user} enabled={billingActive} />
             <FeatureList items={EMPRESA_PRO} />
           </div>
 
@@ -270,11 +287,9 @@ export default async function PrecosPage() {
             <div className="mt-5 flex items-baseline gap-2">
               <span className="text-4xl font-bold">R$ 149,90</span>
               <span className="text-sm text-muted-foreground">/mês</span>
-              <SoonBadge />
+              {!billingActive && <SoonBadge />}
             </div>
-            <Button size="lg" variant="outline" className="mt-6 w-full" disabled>
-              Avise-me quando lançar
-            </Button>
+            <PlanCTA loggedIn={!!user} enabled={billingActive} />
             <FeatureList items={EMPRESA_ENTERPRISE} />
           </div>
         </div>

@@ -5,7 +5,7 @@ import { db } from "@/lib/db"
 import type { CreateBookingInput } from "@/lib/validations/booking"
 
 export class BookingError extends Error {
-  constructor(public code: "ESTABLISHMENT_NOT_FOUND" | "SERVICE_NOT_FOUND" | "PROFESSIONAL_NOT_FOUND" | "SLOT_TAKEN" | "INVALID", message: string) {
+  constructor(public code: "ESTABLISHMENT_NOT_FOUND" | "SERVICE_NOT_FOUND" | "PROFESSIONAL_NOT_FOUND" | "SLOT_TAKEN" | "PLAN_LIMIT" | "INVALID", message: string) {
     super(message)
   }
 }
@@ -26,9 +26,34 @@ export async function createBooking(input: CreateBookingInput) {
       slug: input.establishmentSlug,
       organization: { status: { not: "SUSPENDED" } },
     },
+    include: {
+      organization: {
+        select: { planLimitBookingsPerMonth: true },
+      },
+    },
   })
   if (!establishment) {
     throw new BookingError("ESTABLISHMENT_NOT_FOUND", "Estabelecimento não encontrado")
+  }
+
+  const monthlyLimit = establishment.organization.planLimitBookingsPerMonth
+  if (monthlyLimit !== -1) {
+    const monthStart = new Date()
+    monthStart.setUTCDate(1)
+    monthStart.setUTCHours(0, 0, 0, 0)
+    const count = await db.booking.count({
+      where: {
+        establishmentId: establishment.id,
+        createdAt: { gte: monthStart },
+        status: { not: "CANCELLED" },
+      },
+    })
+    if (count >= monthlyLimit) {
+      throw new BookingError(
+        "PLAN_LIMIT",
+        "Limite de agendamentos do mês atingido. Entre em contato com o estabelecimento.",
+      )
+    }
   }
 
   const service = await db.service.findFirst({

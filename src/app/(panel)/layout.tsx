@@ -20,6 +20,7 @@ const NAV: Array<{ href: string; label: string; ownerOnly?: boolean }> = [
   { href: "/painel/historico", label: "Histórico" },
   { href: "/painel/unidades", label: "Unidades" },
   { href: "/painel/equipe", label: "Equipe", ownerOnly: true },
+  { href: "/painel/plano", label: "Plano", ownerOnly: true },
   { href: "/painel/configuracoes", label: "Configurações", ownerOnly: true },
 ]
 

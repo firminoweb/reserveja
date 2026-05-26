@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
     )
   } catch (err) {
     if (err instanceof BookingError) {
-      const status = err.code === "SLOT_TAKEN" ? 409 : 400
+      const status = err.code === "SLOT_TAKEN" ? 409 : err.code === "PLAN_LIMIT" ? 402 : 400
       return NextResponse.json({ error: err.code, message: err.message }, { status })
     }
     console.error("[api/bookings] erro inesperado", err)
