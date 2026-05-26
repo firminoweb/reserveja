@@ -6,6 +6,7 @@ import { db } from "@/lib/db"
 import { formatAddressLines, googleMapsUrl, hasAddress } from "@/lib/address"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { ShareContacts } from "@/components/establishment/share-contacts"
 
 export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
   const { slug } = await props.params
@@ -19,6 +20,10 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
       coverUrl: true,
       logoUrl: true,
       whatsapp: true,
+      instagram: true,
+      facebook: true,
+      tiktok: true,
+      youtube: true,
       street: true,
       streetNumber: true,
       complement: true,
@@ -63,6 +68,16 @@ export default async function EstablishmentPage(props: PageProps<"/[slug]">) {
           ) : null}
         </div>
       </div>
+
+      <ShareContacts
+        slug={slug}
+        name={establishment.name}
+        whatsapp={establishment.whatsapp}
+        instagram={establishment.instagram}
+        facebook={establishment.facebook}
+        tiktok={establishment.tiktok}
+        youtube={establishment.youtube}
+      />
 
       {hasAddress(establishment) ? (
         <div className="mt-6 rounded-lg border bg-muted/30 px-4 py-3 flex items-start gap-3">

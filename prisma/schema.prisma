@@ -176,6 +176,10 @@ model Establishment {
   timezone       String         @default("America/Sao_Paulo")
   logoUrl        String?
   coverUrl       String?
+  instagram      String?
+  facebook       String?
+  tiktok         String?
+  youtube        String?
   // Endereço (nullable pra compat com estabelecimentos pré-migration)
   cep            String?        // 8 dígitos sem máscara
   street         String?

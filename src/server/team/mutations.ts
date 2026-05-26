@@ -63,7 +63,7 @@ export async function inviteMember(
 
   let user = await db.user.findUnique({
     where: { email: input.email },
-    select: { id: true, name: true, email: true },
+    select: { id: true, name: true, email: true, mustChangePassword: true },
   })
   let tempPassword: string | undefined
   let userCreated = false
@@ -76,6 +76,15 @@ export async function inviteMember(
     if (existing) {
       throw new TeamError("ALREADY_MEMBER", "Esse usuário já é membro da empresa")
     }
+
+    if (user.mustChangePassword) {
+      tempPassword = generateTempPassword()
+      const passwordHash = await bcrypt.hash(tempPassword, 12)
+      await db.user.update({
+        where: { id: user.id },
+        data: { passwordHash, name: input.name },
+      })
+    }
   } else {
     tempPassword = generateTempPassword()
     const passwordHash = await bcrypt.hash(tempPassword, 12)
@@ -84,10 +93,10 @@ export async function inviteMember(
         email: input.email,
         passwordHash,
         name: input.name,
-        role: "OWNER", // Role do sistema (User.role) — não confundir com Membership.role
-        mustChangePassword: true, // forçar troca na primeira entrada
+        role: "OWNER",
+        mustChangePassword: true,
       },
-      select: { id: true, name: true, email: true },
+      select: { id: true, name: true, email: true, mustChangePassword: true },
     })
     userCreated = true
   }

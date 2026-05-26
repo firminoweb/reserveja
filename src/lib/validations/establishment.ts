@@ -36,6 +36,14 @@ const optionalUrl = z
   .optional()
   .or(z.literal(""))
 
+const optionalHandle = z
+  .string()
+  .trim()
+  .max(120)
+  .transform((v) => v.replace(/^@/, ""))
+  .optional()
+  .or(z.literal(""))
+
 const optionalString = (max: number) =>
   z.string().trim().max(max).optional().or(z.literal(""))
 
@@ -48,6 +56,10 @@ export const updateEstablishmentSchema = z.object({
   timezone: z.string().min(3).max(60),
   logoUrl: optionalUrl,
   coverUrl: optionalUrl,
+  instagram: optionalHandle,
+  facebook: optionalHandle,
+  tiktok: optionalHandle,
+  youtube: optionalHandle,
   // Endereço opcional em update (estabelecimentos pré-migration podem não ter)
   cep: z
     .string()
