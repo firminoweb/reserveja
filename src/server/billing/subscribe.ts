@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import {
   createCustomer,
   createSubscription,
+  getPaymentLink,
   AsaasError,
 } from "@/lib/asaas"
 import {
@@ -106,7 +107,7 @@ export async function subscribeToPlan(
       },
     })
 
-    const paymentLink = `https://www.asaas.com/c/${subscription.id}`
+    const paymentLink = getPaymentLink(subscription.id)
 
     return { paymentLink, subscriptionId: subscription.id }
   } catch (err) {

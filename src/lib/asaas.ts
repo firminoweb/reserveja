@@ -105,4 +105,10 @@ export async function cancelSubscription(
   await request(`/subscriptions/${subscriptionId}`, { method: "DELETE" })
 }
 
+export function getPaymentLink(subscriptionId: string): string {
+  const isSandbox = BASE_URL.includes("sandbox")
+  const host = isSandbox ? "https://sandbox.asaas.com" : "https://www.asaas.com"
+  return `${host}/c/${subscriptionId}`
+}
+
 export { AsaasError }
