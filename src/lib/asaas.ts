@@ -21,6 +21,19 @@ export type AsaasSubscription = {
   billingType: string
 }
 
+export type AsaasPayment = {
+  id: string
+  status: string
+  invoiceUrl: string
+  value: number
+  dueDate: string
+}
+
+type AsaasPaymentList = {
+  data: AsaasPayment[]
+  totalCount: number
+}
+
 export type AsaasBillingType = "BOLETO" | "CREDIT_CARD" | "PIX" | "UNDEFINED"
 
 type CreateCustomerData = {
@@ -105,10 +118,27 @@ export async function cancelSubscription(
   await request(`/subscriptions/${subscriptionId}`, { method: "DELETE" })
 }
 
-export function getPaymentLink(subscriptionId: string): string {
-  const isSandbox = BASE_URL.includes("sandbox")
-  const host = isSandbox ? "https://sandbox.asaas.com" : "https://www.asaas.com"
-  return `${host}/c/${subscriptionId}`
+export async function getSubscriptionPayments(
+  subscriptionId: string,
+): Promise<AsaasPayment[]> {
+  const result = await request<AsaasPaymentList>(
+    `/subscriptions/${subscriptionId}/payments`,
+  )
+  return result.data
+}
+
+export async function getFirstPaymentInvoiceUrl(
+  subscriptionId: string,
+  maxRetries = 5,
+): Promise<string | null> {
+  for (let i = 0; i < maxRetries; i++) {
+    const payments = await getSubscriptionPayments(subscriptionId)
+    if (payments.length > 0 && payments[0].invoiceUrl) {
+      return payments[0].invoiceUrl
+    }
+    await new Promise((r) => setTimeout(r, 1000))
+  }
+  return null
 }
 
 export { AsaasError }

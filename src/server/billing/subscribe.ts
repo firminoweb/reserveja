@@ -4,7 +4,7 @@ import { db } from "@/lib/db"
 import {
   createCustomer,
   createSubscription,
-  getPaymentLink,
+  getFirstPaymentInvoiceUrl,
   AsaasError,
 } from "@/lib/asaas"
 import {
@@ -107,9 +107,12 @@ export async function subscribeToPlan(
       },
     })
 
-    const paymentLink = getPaymentLink(subscription.id)
+    const invoiceUrl = await getFirstPaymentInvoiceUrl(subscription.id)
+    if (!invoiceUrl) {
+      throw new BillingError("ASAAS_ERROR", "Não foi possível obter o link de pagamento. Tente novamente.")
+    }
 
-    return { paymentLink, subscriptionId: subscription.id }
+    return { paymentLink: invoiceUrl, subscriptionId: subscription.id }
   } catch (err) {
     if (err instanceof BillingError) throw err
     if (err instanceof AsaasError) {
