@@ -8,7 +8,6 @@ import {
   AsaasError,
 } from "@/lib/asaas"
 import {
-  getLimitsForPlan,
   getPlanPriceBRL,
   isBillingEnabled,
   isValidPlanForType,
@@ -96,14 +95,11 @@ export async function subscribeToPlan(
       externalReference: org.id,
     })
 
-    const limits = getLimitsForPlan(targetPlan, org.type)
-
     await db.organization.update({
       where: { id: org.id },
       data: {
-        plan: targetPlan,
         asaasSubscriptionId: subscription.id,
-        ...limits,
+        asaasPendingPlan: targetPlan,
       },
     })
 

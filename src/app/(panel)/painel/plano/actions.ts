@@ -15,7 +15,7 @@ type SubscribeResult =
   | { ok: false; message: string }
 
 type CancelResult =
-  | { ok: true }
+  | { ok: true; expiresAt: string }
   | { ok: false; message: string }
 
 export async function subscribePlanAction(
@@ -49,10 +49,10 @@ export async function cancelSubscriptionAction(): Promise<CancelResult> {
   const { organization } = await requireOwnerRole()
 
   try {
-    await cancelSubscription(organization.id)
+    const { expiresAt } = await cancelSubscription(organization.id)
     revalidatePath("/painel/plano")
     revalidatePath("/painel")
-    return { ok: true }
+    return { ok: true, expiresAt: expiresAt.toISOString() }
   } catch (err) {
     console.error("[plano] cancelSubscription falhou", err)
     return { ok: false, message: "Erro ao cancelar. Tente novamente." }

@@ -1,6 +1,7 @@
 import Link from "next/link"
 
 import { requireOwnerMembership } from "@/server/auth/guards"
+import { downgradeExpiredPlans } from "@/server/billing/cancel"
 import { Button } from "@/components/ui/button"
 import { Logo } from "@/components/ui/logo"
 import { UnitSelector } from "@/components/panel/unit-selector"
@@ -31,6 +32,15 @@ export default async function PanelLayout({
 }) {
   const { session, organization, establishment, establishments, role } =
     await requireOwnerMembership()
+
+  if (
+    organization.plan !== "FREE" &&
+    organization.planExpiresAt &&
+    organization.planExpiresAt <= new Date() &&
+    !organization.asaasSubscriptionId
+  ) {
+    await downgradeExpiredPlans()
+  }
 
   const navItems = NAV.filter((item) => !item.ownerOnly || role === "OWNER")
   const units = establishments.map((e) => ({

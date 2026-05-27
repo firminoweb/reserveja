@@ -23,7 +23,7 @@ export async function processWebhookEvent(
 
   const org = await db.organization.findFirst({
     where: { asaasSubscriptionId: payment.subscription },
-    select: { id: true, type: true, plan: true },
+    select: { id: true, type: true, plan: true, asaasPendingPlan: true },
   })
   if (!org) {
     console.warn("[billing:webhook] Org não encontrada para subscription", payment.subscription)
@@ -33,9 +33,17 @@ export async function processWebhookEvent(
   switch (event) {
     case "PAYMENT_CONFIRMED":
     case "PAYMENT_RECEIVED": {
+      const activePlan = org.asaasPendingPlan ?? org.plan
+      const limits = getLimitsForPlan(activePlan, org.type)
       await db.organization.update({
         where: { id: org.id },
-        data: { status: "ACTIVE", planExpiresAt: null },
+        data: {
+          plan: activePlan,
+          status: "ACTIVE",
+          planExpiresAt: null,
+          asaasPendingPlan: null,
+          ...limits,
+        },
       })
       break
     }

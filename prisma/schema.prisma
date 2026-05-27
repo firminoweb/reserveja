@@ -168,6 +168,7 @@ model Organization {
   planLimitBookingsPerMonth Int             @default(50)
   asaasCustomerId          String?
   asaasSubscriptionId      String?
+  asaasPendingPlan         OrgPlan?
   planExpiresAt            DateTime?        @db.Timestamptz(3)
   establishments           Establishment[]
   memberships              Membership[]

@@ -82,7 +82,9 @@ export default async function PlanoPage() {
   ])
 
   const isPaid = organization.plan !== "FREE"
-  const hasGrace = organization.planExpiresAt && organization.planExpiresAt > new Date()
+  const hasPending = !!organization.asaasPendingPlan
+  const isCancelled = isPaid && !organization.asaasSubscriptionId && !!organization.planExpiresAt
+  const hasGrace = !isCancelled && organization.planExpiresAt && organization.planExpiresAt > new Date()
   const billingActive = isBillingEnabled()
 
   return (
@@ -93,11 +95,32 @@ export default async function PlanoPage() {
       <div className="mt-6 rounded-xl border bg-card p-5 shadow-sm">
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold">{planConfig.namePT}</h2>
-          {isPaid && <Badge variant="default">Ativo</Badge>}
-          {!isPaid && organization.status === "TRIAL" && (
+          {isPaid && !hasPending && !isCancelled && (
+            <Badge variant="default">Ativo</Badge>
+          )}
+          {isCancelled && <Badge variant="outline">Cancelado</Badge>}
+          {hasPending && <Badge variant="secondary">Aguardando pagamento</Badge>}
+          {!isPaid && !hasPending && organization.status === "TRIAL" && (
             <Badge variant="outline">Avaliação</Badge>
           )}
         </div>
+
+        {isCancelled && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Plano cancelado — você pode continuar usando até{" "}
+            <span className="font-semibold">
+              {organization.planExpiresAt!.toLocaleDateString("pt-BR")}
+            </span>
+            . Após essa data, será rebaixado para o Grátis.
+          </p>
+        )}
+
+        {hasPending && (
+          <p className="mt-2 text-sm text-muted-foreground">
+            Você solicitou o plano <span className="font-semibold">{organization.asaasPendingPlan}</span>.
+            Conclua o pagamento para ativar.
+          </p>
+        )}
 
         {hasGrace && (
           <p className="mt-2 text-sm text-destructive font-medium">
@@ -124,7 +147,7 @@ export default async function PlanoPage() {
           />
         </div>
 
-        {isPaid && (
+        {isPaid && !isCancelled && (
           <div className="mt-5 pt-4 border-t">
             <CancelPlanButton />
           </div>
