@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     select: { id: true },
   })
   if (existing) {
-    return NextResponse.json({ ok: true })
+    return NextResponse.json({ ok: true, debug: "duplicate_event" })
   }
 
   const org = body.payment.subscription
@@ -50,15 +50,21 @@ export async function POST(req: NextRequest) {
       })
     : null
 
-  if (org) {
-    await db.billingEvent.create({
-      data: {
-        organizationId: org.id,
-        asaasPaymentId: body.payment.id,
-        event: body.event,
-      },
+  if (!org) {
+    return NextResponse.json({
+      ok: true,
+      debug: "org_not_found",
+      subscription: body.payment.subscription,
     })
   }
+
+  await db.billingEvent.create({
+    data: {
+      organizationId: org.id,
+      asaasPaymentId: body.payment.id,
+      event: body.event,
+    },
+  })
 
   try {
     await processWebhookEvent(body)
@@ -67,5 +73,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "processing_error" }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true, debug: "processed", orgId: org.id })
 }
