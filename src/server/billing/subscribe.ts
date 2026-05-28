@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import {
   createCustomer,
   createSubscription,
+  cancelSubscription as asaasCancelSubscription,
   getFirstPaymentInvoiceUrl,
   AsaasError,
 } from "@/lib/asaas"
@@ -20,12 +21,15 @@ export class BillingError extends Error {
       | "INVALID_PLAN"
       | "ASAAS_ERROR"
       | "ORG_NOT_FOUND"
-      | "MISSING_TAX_ID",
+      | "MISSING_TAX_ID"
+      | "PENDING_IN_FLIGHT",
     message: string,
   ) {
     super(message)
   }
 }
+
+const PENDING_LOCK_SECONDS = 30
 
 export async function subscribeToPlan(
   organizationId: string,
@@ -46,6 +50,8 @@ export async function subscribeToPlan(
       plan: true,
       asaasCustomerId: true,
       asaasSubscriptionId: true,
+      asaasPendingPlan: true,
+      updatedAt: true,
     },
   })
   if (!org) throw new BillingError("ORG_NOT_FOUND", "Empresa não encontrada")
@@ -58,13 +64,34 @@ export async function subscribeToPlan(
     throw new BillingError("INVALID_PLAN", "Plano incompatível com o tipo de conta")
   }
 
-  if (org.asaasSubscriptionId && org.plan === targetPlan) {
+  if (org.asaasSubscriptionId && org.plan === targetPlan && !org.asaasPendingPlan) {
     throw new BillingError("ALREADY_SUBSCRIBED", "Você já está nesse plano")
   }
 
+  const lockAge = (Date.now() - org.updatedAt.getTime()) / 1000
+  if (org.asaasPendingPlan && lockAge < PENDING_LOCK_SECONDS) {
+    throw new BillingError(
+      "PENDING_IN_FLIGHT",
+      "Aguarde alguns instantes — outra assinatura está sendo processada.",
+    )
+  }
+
   let asaasCustomerId = org.asaasCustomerId
+  let newSubscriptionId: string | null = null
 
   try {
+    if (org.asaasSubscriptionId) {
+      try {
+        await asaasCancelSubscription(org.asaasSubscriptionId)
+      } catch (err) {
+        console.error(
+          "[billing] Falha ao cancelar subscription antiga (best-effort)",
+          org.asaasSubscriptionId,
+          err,
+        )
+      }
+    }
+
     if (!asaasCustomerId) {
       const customer = await createCustomer({
         name: org.name,
@@ -94,6 +121,15 @@ export async function subscribeToPlan(
       description: `Reserve Já — Plano ${targetPlan}`,
       externalReference: org.id,
     })
+    newSubscriptionId = subscription.id
+
+    const invoiceUrl = await getFirstPaymentInvoiceUrl(subscription.id)
+    if (!invoiceUrl) {
+      throw new BillingError(
+        "ASAAS_ERROR",
+        "Não foi possível obter o link de pagamento. Tente novamente.",
+      )
+    }
 
     await db.organization.update({
       where: { id: org.id },
@@ -103,13 +139,19 @@ export async function subscribeToPlan(
       },
     })
 
-    const invoiceUrl = await getFirstPaymentInvoiceUrl(subscription.id)
-    if (!invoiceUrl) {
-      throw new BillingError("ASAAS_ERROR", "Não foi possível obter o link de pagamento. Tente novamente.")
-    }
-
     return { paymentLink: invoiceUrl, subscriptionId: subscription.id }
   } catch (err) {
+    if (newSubscriptionId) {
+      try {
+        await asaasCancelSubscription(newSubscriptionId)
+      } catch (cancelErr) {
+        console.error(
+          "[billing] Falha ao reverter subscription após erro",
+          newSubscriptionId,
+          cancelErr,
+        )
+      }
+    }
     if (err instanceof BillingError) throw err
     if (err instanceof AsaasError) {
       console.error("[billing] Asaas API error", err.status, err.body)

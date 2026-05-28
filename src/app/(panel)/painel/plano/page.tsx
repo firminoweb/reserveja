@@ -38,7 +38,7 @@ function UsageBar({
 }
 
 const AUTONOMO_PRO_FEATURES = [
-  "Agendamentos ilimitados",
+  "Até 500 agendamentos por mês",
   "Lembretes por WhatsApp",
   "Imagens nos serviços",
   "Capa personalizada",
@@ -47,18 +47,19 @@ const AUTONOMO_PRO_FEATURES = [
 
 const EMPRESA_PROF_FEATURES = [
   "Até 3 unidades",
-  "Profissionais ilimitados",
-  "Agendamentos ilimitados",
+  "Até 10 membros na equipe",
+  "Até 2.000 agendamentos por mês",
   "Lembretes por WhatsApp",
   "Gestão de equipe (staff)",
   "Relatórios e métricas",
 ]
 
 const EMPRESA_EMPR_FEATURES = [
-  "Unidades ilimitadas",
+  "Até 10 unidades",
+  "Até 30 membros na equipe",
+  "Até 6.000 agendamentos por mês",
   "Tudo do Profissional",
   "Suporte prioritário",
-  "API de integração",
 ]
 
 export default async function PlanoPage() {

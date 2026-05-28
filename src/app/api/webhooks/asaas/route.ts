@@ -35,6 +35,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 })
   }
 
+  const isProd = process.env.NODE_ENV === "production"
+  const debug = (info: Record<string, unknown>) =>
+    isProd ? { ok: true } : { ok: true, ...info }
+
   const existing = await db.billingEvent.findUnique({
     where: {
       asaasPaymentId_event: {
@@ -45,7 +49,7 @@ export async function POST(req: NextRequest) {
     select: { id: true },
   })
   if (existing) {
-    return NextResponse.json({ ok: true, debug: "duplicate_event" })
+    return NextResponse.json(debug({ debug: "duplicate_event" }))
   }
 
   const org = body.payment.subscription
@@ -56,11 +60,13 @@ export async function POST(req: NextRequest) {
     : null
 
   if (!org) {
-    return NextResponse.json({
-      ok: true,
-      debug: "org_not_found",
-      subscription: body.payment.subscription,
-    })
+    console.warn(
+      "[asaas-webhook] Org não encontrada para subscription",
+      body.payment.subscription,
+    )
+    return NextResponse.json(
+      debug({ debug: "org_not_found", subscription: body.payment.subscription }),
+    )
   }
 
   await db.billingEvent.create({
@@ -78,5 +84,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "processing_error" }, { status: 500 })
   }
 
-  return NextResponse.json({ ok: true, debug: "processed", orgId: org.id })
+  return NextResponse.json(debug({ debug: "processed", orgId: org.id }))
 }

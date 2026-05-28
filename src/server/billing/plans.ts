@@ -9,8 +9,6 @@ export type PlanConfig = {
   limitBookingsPerMonth: number
 }
 
-const UNLIMITED = -1
-
 const PLANS: Record<`${OrgPlan}_${OrgType}`, PlanConfig> = {
   FREE_AUTONOMO: {
     id: "FREE",
@@ -26,7 +24,7 @@ const PLANS: Record<`${OrgPlan}_${OrgType}`, PlanConfig> = {
     priceCents: 2990,
     limitUnits: 1,
     limitUsers: 1,
-    limitBookingsPerMonth: UNLIMITED,
+    limitBookingsPerMonth: 500,
   },
   FREE_EMPRESA: {
     id: "FREE",
@@ -41,16 +39,16 @@ const PLANS: Record<`${OrgPlan}_${OrgType}`, PlanConfig> = {
     namePT: "Profissional",
     priceCents: 5990,
     limitUnits: 3,
-    limitUsers: UNLIMITED,
-    limitBookingsPerMonth: UNLIMITED,
+    limitUsers: 10,
+    limitBookingsPerMonth: 2000,
   },
   EMPRESARIAL_EMPRESA: {
     id: "EMPRESARIAL",
     namePT: "Empresarial",
     priceCents: 14990,
-    limitUnits: UNLIMITED,
-    limitUsers: UNLIMITED,
-    limitBookingsPerMonth: UNLIMITED,
+    limitUnits: 10,
+    limitUsers: 30,
+    limitBookingsPerMonth: 6000,
   },
   // Combinações inválidas — fallback pro FREE do tipo
   PRO_EMPRESA: {
