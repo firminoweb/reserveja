@@ -181,10 +181,11 @@ model BillingEvent {
   id              String       @id @default(cuid())
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  asaasPaymentId  String       @unique
+  asaasPaymentId  String
   event           String
   processedAt     DateTime     @default(now()) @db.Timestamptz(3)
 
+  @@unique([asaasPaymentId, event])
   @@index([organizationId])
   @@index([processedAt])
 }

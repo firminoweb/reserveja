@@ -36,7 +36,12 @@ export async function POST(req: NextRequest) {
   }
 
   const existing = await db.billingEvent.findUnique({
-    where: { asaasPaymentId: body.payment.id },
+    where: {
+      asaasPaymentId_event: {
+        asaasPaymentId: body.payment.id,
+        event: body.event,
+      },
+    },
     select: { id: true },
   })
   if (existing) {
