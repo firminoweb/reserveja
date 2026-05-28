@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 })
   }
 
-  const isProd = process.env.NODE_ENV === "production"
+  const isProd = process.env.VERCEL_ENV === "production"
   const debug = (info: Record<string, unknown>) =>
     isProd ? { ok: true } : { ok: true, ...info }
 
