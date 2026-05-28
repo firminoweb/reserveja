@@ -4,6 +4,7 @@ import { db } from "@/lib/db"
 import { Badge } from "@/components/ui/badge"
 import { BillingPlanCard } from "@/components/panel/billing-plan-card"
 import { CancelPlanButton } from "@/components/panel/cancel-plan-button"
+import { PendingPaymentPoller } from "@/components/panel/pending-payment-poller"
 
 function UsageBar({
   label,
@@ -89,6 +90,9 @@ export default async function PlanoPage() {
 
   return (
     <div className="px-4 py-6 md:px-8 md:py-8 max-w-4xl">
+      {hasPending && (
+        <PendingPaymentPoller pendingPlan={organization.asaasPendingPlan!} />
+      )}
       <h1 className="text-2xl font-bold">Plano</h1>
 
       {/* Status atual */}
