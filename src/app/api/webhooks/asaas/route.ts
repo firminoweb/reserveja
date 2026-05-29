@@ -69,19 +69,30 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  await db.billingEvent.create({
-    data: {
-      organizationId: org.id,
-      asaasPaymentId: body.payment.id,
-      event: body.event,
-    },
-  })
-
   try {
     await processWebhookEvent(body)
   } catch (err) {
     console.error("[asaas-webhook] Erro ao processar evento", body.event, err)
     return NextResponse.json({ error: "processing_error" }, { status: 500 })
+  }
+
+  // Idempotência: só registra DEPOIS de processar com sucesso. Se o processamento
+  // falhar (retornamos 500), o Asaas reenvia e reprocessamos — o registro não pode
+  // bloquear o retry. Entregas concorrentes batem no unique (asaasPaymentId, event)
+  // e são ignoradas (SQLSTATE 23505) sem reprocessar.
+  try {
+    await db.billingEvent.create({
+      data: {
+        organizationId: org.id,
+        asaasPaymentId: body.payment.id,
+        event: body.event,
+      },
+    })
+  } catch (err) {
+    const code = (err as { code?: string }).code
+    if (code !== "23505") {
+      console.error("[asaas-webhook] Falha ao registrar billingEvent", err)
+    }
   }
 
   return NextResponse.json(debug({ debug: "processed", orgId: org.id }))

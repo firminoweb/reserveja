@@ -100,6 +100,13 @@ export function getPlanPriceBRL(plan: OrgPlan, orgType: OrgType): number {
   return getPlanConfig(plan, orgType).priceCents / 100
 }
 
+// Billing só fica ativo (planos visíveis em /precos e /painel/plano + ação de
+// assinar liberada) quando AS DUAS condições batem:
+//   - ASAAS_API_KEY definida (sem ela nada funciona de verdade), E
+//   - BILLING_ENABLED === "true" (opt-in explícito).
+// Isso permite subir a chave pra produção sem expor os planos — soft-launch.
+// Webhook e crons NÃO checam essa flag de propósito: assinaturas já existentes
+// continuam sendo processadas mesmo se a flag for desligada.
 export function isBillingEnabled(): boolean {
-  return !!process.env.ASAAS_API_KEY
+  return !!process.env.ASAAS_API_KEY && process.env.BILLING_ENABLED === "true"
 }

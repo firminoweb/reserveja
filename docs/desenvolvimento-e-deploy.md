@@ -285,9 +285,13 @@ No dashboard da Vercel → Settings → Environment Variables. Configure pra
 | `NEXT_PUBLIC_APP_URL` | Mesma URL pública                            | Aparece em metadados e links públicos  |
 | `RESEND_API_KEY`      | Resend → API Keys                            | Sem isso, reset de senha não envia email |
 | `RESEND_FROM_EMAIL`   | Ex.: `Reserve Já <no-reply@seu-dominio.com>` | Resend exige domínio verificado em prod |
-| `CRON_SECRET`         | `openssl rand -base64 32`                    | Só se for ligar cron de lembretes      |
+| `CRON_SECRET`         | `openssl rand -base64 32`                    | Usado pelos **dois** crons (lembretes + expirar pendentes) |
 | `EVOLUTION_API_URL`   | (futuro)                                     | Pode ficar vazio por enquanto          |
 | `EVOLUTION_API_KEY`   | (futuro)                                     | Pode ficar vazio por enquanto          |
+| `ASAAS_API_KEY`       | Asaas → Integrações → API → produção         | Chave de prod (sem prefixo `hmlg`). **Definir já liga os planos pagos** |
+| `ASAAS_API_URL`       | `https://api.asaas.com/v3`                   | Produção (sandbox é `https://sandbox.asaas.com/api/v3`) |
+| `ASAAS_WEBHOOK_SECRET`| `openssl rand -hex 32`                       | **Diferente** do sandbox. Mesmo valor vai no painel do Asaas |
+| `BILLING_ENABLED`     | `true` / `false`                             | Interruptor de soft-launch. Só `true` expõe os planos e libera assinar |
 
 > **Importante sobre `DATABASE_URL`**: use a **direct connection** do Neon
 > (não a pooled). O `prisma migrate deploy` no build precisa de uma conexão
@@ -298,6 +302,43 @@ No dashboard da Vercel → Settings → Environment Variables. Configure pra
 Após adicionar/editar variáveis, **rodar um redeploy** (Settings → Deployments
 → Redeploy do último build), porque variáveis novas não entram em deploys já
 construídos.
+
+### 6.1. Checklist de produção — billing (Asaas)
+
+Passo a passo pra virar a chave do billing em produção. Faça nesta ordem:
+
+**1. Vercel → Environment Variables (Production):**
+
+- [ ] `ASAAS_API_KEY` — chave de **produção** (sem prefixo `hmlg`)
+- [ ] `ASAAS_API_URL` = `https://api.asaas.com/v3`
+- [ ] `ASAAS_WEBHOOK_SECRET` — gere outro com `openssl rand -hex 32` (**diferente** do sandbox)
+- [ ] `BILLING_ENABLED` = `false` no primeiro deploy (deixa a chave pronta, planos escondidos)
+- [ ] Confirmar que `CRON_SECRET` e `DATABASE_URL` de produção já estão setados
+- [ ] Confirmar `NEXT_PUBLIC_APP_URL` = `https://reserveja.app`, `AUTH_URL` = `https://reserveja.app` e `AUTH_SECRET` (NextAuth)
+- [ ] Redeploy depois de salvar (variáveis novas não entram em build já feito)
+
+> ⚠️ Os planos pagos só aparecem (`/precos` e `/painel/plano`) e a assinatura só
+> é liberada quando **`BILLING_ENABLED="true"` E `ASAAS_API_KEY` definida**. Suba
+> a chave com a flag em `false`, valide tudo, e só então flipe pra `true` +
+> redeploy pra abrir os planos pro público.
+
+**2. Asaas produção (painel www.asaas.com → Integrações → Webhooks):**
+
+- [ ] Webhook URL: `https://reserveja.app/api/webhooks/asaas?token=<ASAAS_WEBHOOK_SECRET>`
+      (domínio principal não tem proteção da Vercel, então não precisa de bypass).
+      Alternativa mais segura: deixar a URL sem `?token=` e preencher o campo
+      **"Token de autenticação"** no painel — o app aceita o header `asaas-access-token`.
+- [ ] Eventos: `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`,
+      `PAYMENT_REFUNDED`, `PAYMENT_DELETED`, `PAYMENT_RESTORED`
+
+**3. cron-job.org (job novo, além do de lembretes que já existe):**
+
+- [ ] `GET https://reserveja.app/api/cron/expire-pending-subscriptions`, **1x/dia**,
+      header `Authorization: Bearer <CRON_SECRET>`
+
+**4. Teste E2E no sandbox antes de tudo:** assinar → pagar → confirmar que o
+webhook ativa o plano → cancelar → conferir carência → rodar o cron de
+expire-pending na mão. Testar também 401 com token de webhook errado.
 
 ---
 
